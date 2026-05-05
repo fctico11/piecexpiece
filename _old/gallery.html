@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery — Piece x Piece Mosaics</title>
+  <meta name="description" content="Browse photos of finished mosaic pieces and workshops. Suncatchers, coasters, frames, and more from Piece x Piece workshops.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="images/logo.png">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar__inner">
+      <a href="index.html" class="navbar__logo"><img src="images/logo.png" alt="Piece x Piece Mosaics"></a>
+      <div class="navbar__links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="classes.html">Classes</a>
+        <a href="about.html">About</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="contact.html">Contact</a>
+      </div>
+      <a href="classes.html" class="btn btn--primary btn--sm navbar__cta">View Classes</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="classes.html">Classes</a>
+    <a href="about.html">About</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="contact.html">Contact</a>
+  </div>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container fade-in">
+      <span class="section__label">Our Work</span>
+      <h1>Gallery</h1>
+      <p>A collection of finished pieces and workshop moments.</p>
+    </div>
+  </section>
+
+  <!-- Gallery Grid -->
+  <section class="section" style="padding-top: 40px;">
+    <div class="container">
+      <div class="gallery-grid">
+        <div class="gallery-item fade-in"><img src="images/class-suncatcher.png" alt="Mosaic suncatcher"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="images/gallery-pieces.png" alt="Finished mosaic pieces"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="images/class-coaster.png" alt="Mosaic coasters"></div>
+        <div class="gallery-item fade-in"><img src="images/gallery-workshop.png" alt="Workshop in progress"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="images/class-frame.png" alt="Mosaic picture frame"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="images/hero.png" alt="Beautiful mosaic piece"></div>
+        <div class="gallery-item fade-in"><img src="images/about-lifestyle.png" alt="Creating mosaic art"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="images/gallery-pieces.png" alt="Workshop mosaic pieces"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="images/gallery-workshop.png" alt="Mosaic workshop moment"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <div class="cta-banner fade-in">
+        <h2>Want to make your own?</h2>
+        <p>Join an upcoming workshop and create something beautiful.</p>
+        <a href="classes.html" class="btn btn--primary" style="background: var(--color-white); color: var(--color-primary);">View Classes</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <a href="index.html" class="footer__logo"><img src="images/logo.png" alt="Piece x Piece Mosaics"></a>
+        <div class="footer__links">
+          <a href="index.html">Home</a>
+          <a href="classes.html">Classes</a>
+          <a href="about.html">About</a>
+          <a href="gallery.html">Gallery</a>
+          <a href="contact.html">Contact</a>
+        </div>
+        <div class="footer__social">
+          <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </a>
+        </div>
+        <p class="footer__copy">&copy; 2025 Piece x Piece Mosaics. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox__close" aria-label="Close">&times;</button>
+    <button class="lightbox__nav lightbox__nav--prev" aria-label="Previous">&#8249;</button>
+    <img class="lightbox__img" id="lightbox-img" src="" alt="Gallery image">
+    <button class="lightbox__nav lightbox__nav--next" aria-label="Next">&#8250;</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

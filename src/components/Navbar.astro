@@ -1,0 +1,63 @@
+---
+// Navbar.astro
+const pathname = Astro.url.pathname;
+---
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+  <div class="navbar__inner">
+    <a href="/" class="navbar__logo">
+      <img src="/images/logo.png" alt="Piece x Piece Mosaics">
+    </a>
+    <div class="navbar__links" id="nav-links">
+      <a href="/" class={pathname === "/" ? "active" : ""}>Home</a>
+      <a href="/classes" class={pathname === "/classes" ? "active" : ""}>Classes</a>
+      <a href="/about" class={pathname === "/about" ? "active" : ""}>About</a>
+      <a href="/gallery" class={pathname === "/gallery" ? "active" : ""}>Gallery</a>
+      <a href="/contact" class={pathname === "/contact" ? "active" : ""}>Contact</a>
+    </div>
+    <a href="/classes" class="btn btn--primary btn--sm navbar__cta">View Classes</a>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobile-nav">
+  <a href="/" class={pathname === "/" ? "active" : ""}>Home</a>
+  <a href="/classes" class={pathname === "/classes" ? "active" : ""}>Classes</a>
+  <a href="/about" class={pathname === "/about" ? "active" : ""}>About</a>
+  <a href="/gallery" class={pathname === "/gallery" ? "active" : ""}>Gallery</a>
+  <a href="/contact" class={pathname === "/contact" ? "active" : ""}>Contact</a>
+</div>
+
+<script>
+  // Mobile nav toggle
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobile-nav');
+  
+  if (hamburger && mobileNav) {
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      mobileNav.classList.toggle('open');
+      document.body.style.overflow = mobileNav.classList.contains('open') ? 'hidden' : '';
+    });
+    
+    mobileNav.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        mobileNav.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+
+  // Navbar scroll effect
+  const navbar = document.getElementById('navbar');
+  if (navbar) {
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 20);
+    });
+  }
+</script>

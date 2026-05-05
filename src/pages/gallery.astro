@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import CTABanner from '../components/CTABanner.astro';
+import Lightbox from '../components/Lightbox.astro';
+
+const title = "Gallery — Piece x Piece Mosaics";
+const description = "Browse photos of finished mosaic pieces and workshops. Suncatchers, coasters, frames, and more from Piece x Piece workshops.";
+---
+
+<Base title={title} description={description}>
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container fade-in">
+      <span class="section__label">Our Work</span>
+      <h1>Gallery</h1>
+      <p>A collection of finished pieces and workshop moments.</p>
+    </div>
+  </section>
+
+  <!-- Gallery Grid -->
+  <section class="section" style="padding-top: 40px;">
+    <div class="container">
+      <div class="gallery-grid">
+        <div class="gallery-item fade-in"><img src="/images/class-suncatcher.png" alt="Mosaic suncatcher" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="/images/gallery-pieces.png" alt="Finished mosaic pieces" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="/images/class-coaster.png" alt="Mosaic coasters" loading="lazy"></div>
+        <div class="gallery-item fade-in"><img src="/images/gallery-workshop.png" alt="Workshop in progress" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="/images/class-frame.png" alt="Mosaic picture frame" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="/images/hero.png" alt="Beautiful mosaic piece" loading="lazy"></div>
+        <div class="gallery-item fade-in"><img src="/images/about-lifestyle.png" alt="Creating mosaic art" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-1"><img src="/images/gallery-pieces.png" alt="Workshop mosaic pieces" loading="lazy"></div>
+        <div class="gallery-item fade-in fade-in-delay-2"><img src="/images/gallery-workshop.png" alt="Mosaic workshop moment" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <CTABanner 
+        title="Want to make your own?"
+        description="Join an upcoming workshop and create something beautiful."
+        buttonText="View Classes"
+        buttonLink="/classes"
+      />
+    </div>
+  </section>
+
+  <Lightbox />
+</Base>

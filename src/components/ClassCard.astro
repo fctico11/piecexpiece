@@ -1,0 +1,79 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  dateStr: string;
+  duration?: string;
+  location: string;
+  price: string;
+  imageSrc: string;
+  badge?: string;
+  delay?: string;
+}
+
+const { 
+  title, 
+  description, 
+  dateStr, 
+  duration, 
+  location, 
+  price, 
+  imageSrc, 
+  badge, 
+  delay = "" 
+} = Astro.props;
+---
+
+<div class={`class-card fade-in ${delay}`}>
+  {badge && <div class="class-card__badge">{badge}</div>}
+  <div class="class-card__img">
+    <img src={imageSrc} alt={title} loading="lazy" />
+  </div>
+  <div class="class-card__body">
+    <h3 class="class-card__name">{title}</h3>
+    <p class="class-card__desc">{description}</p>
+    <div class="class-card__meta">
+      <div class="class-card__meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        {dateStr}
+      </div>
+      {duration && (
+        <div class="class-card__meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {duration}
+        </div>
+      )}
+      <div class="class-card__meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {location}
+      </div>
+    </div>
+    <div class="class-card__price">{price} <span>/ person</span></div>
+    <div class="class-card__footer">
+      <button class="btn btn--primary btn--full btn-tickets" data-class={title}>Get Tickets</button>
+      <span class="stripe-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Secure checkout powered by Stripe
+      </span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mock Stripe checkout
+  const buttons = document.querySelectorAll('.btn-tickets');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      e.preventDefault();
+      const name = target.dataset.class || 'Workshop';
+      target.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Redirecting…`;
+      target.style.pointerEvents = 'none';
+      setTimeout(() => {
+        target.innerHTML = 'Get Tickets';
+        target.style.pointerEvents = '';
+        alert(`Stripe Checkout would open for: ${name}\n\nThis is a mockup — no real payment will be processed.`);
+      }, 1500);
+    });
+  });
+</script>

@@ -1,0 +1,16 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+}
+
+const { title, description, buttonText, buttonLink } = Astro.props;
+---
+
+<div class="cta-banner fade-in">
+  <h2>{title}</h2>
+  <p>{description}</p>
+  <a href={buttonLink} class="btn btn--primary" style="background: var(--color-white); color: var(--color-primary);">{buttonText}</a>
+</div>

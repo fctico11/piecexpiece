@@ -1,0 +1,43 @@
+---
+import SEOHead from '../components/SEOHead.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  type?: 'website' | 'article';
+}
+
+const { title, description, image, type } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <SEOHead title={title} description={description} image={image} type={type} />
+  </head>
+  <body>
+    <Navbar />
+    <slot />
+    <Footer />
+    
+    <script>
+      // Global scroll animations
+      const fadeEls = document.querySelectorAll('.fade-in');
+      if (fadeEls.length) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+        fadeEls.forEach(el => observer.observe(el));
+      }
+    </script>
+  </body>
+</html>

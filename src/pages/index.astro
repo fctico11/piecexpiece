@@ -1,0 +1,115 @@
+---
+import Base from '../layouts/Base.astro';
+import ClassCard from '../components/ClassCard.astro';
+import CTABanner from '../components/CTABanner.astro';
+import Lightbox from '../components/Lightbox.astro';
+
+const title = "Piece x Piece Mosaics — Pop-Up Mosaic Workshops";
+const description = "Pop-up mosaic workshops designed for all skill levels. Create beautiful mosaic art in a relaxing, hands-on experience. No experience needed.";
+---
+
+<Base title={title} description={description}>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero__layout">
+        <div class="hero__content fade-in">
+          <span class="hero__badge">Pop-Up Workshops</span>
+          <h1>Create something beautiful, <em>piece by piece.</em></h1>
+          <p class="hero__sub">Pop-up mosaic workshops designed for all skill levels. No experience needed.</p>
+          <div class="hero__buttons">
+            <a href="/classes" class="btn btn--primary">View Classes</a>
+            <a href="/contact" class="btn btn--outline">Book a Workshop</a>
+          </div>
+        </div>
+        <div class="hero__image fade-in fade-in-delay-2">
+          <img src="/images/hero.png" alt="Beautiful mosaic suncatcher created at a Piece x Piece workshop" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Intro -->
+  <section class="section intro">
+    <div class="container">
+      <div class="fade-in">
+        <span class="section__label">The Experience</span>
+        <h2>Art-making for everyone</h2>
+        <p class="intro__text">Step away from the everyday and into a calming creative space. Our mosaic workshops blend artistic expression with the soothing benefits of art therapy — perfect for date nights, girls' nights, team-building, or simply treating yourself to something beautiful.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Classes -->
+  <section class="section section--beige">
+    <div class="container">
+      <div class="text-center fade-in">
+        <span class="section__label">Upcoming Workshops</span>
+        <h2>Featured Classes</h2>
+      </div>
+      <div class="classes-grid">
+        <ClassCard 
+          title="Suncatcher Mosaic Workshop"
+          description="Create a stunning glass mosaic suncatcher to hang in your window."
+          dateStr="Sat, May 17 · 2:00 PM"
+          location="Studio 42, Brooklyn NY"
+          price="$65"
+          imageSrc="/images/class-suncatcher.png"
+          badge="Limited Spots"
+          delay="fade-in-delay-1"
+        />
+        <ClassCard 
+          title="Mosaic Coaster Set"
+          description="Design and grout a set of four beautiful mosaic coasters to take home."
+          dateStr="Sun, May 25 · 11:00 AM"
+          location="The Maker Space, Williamsburg"
+          price="$55"
+          imageSrc="/images/class-coaster.png"
+          delay="fade-in-delay-2"
+        />
+        <ClassCard 
+          title="Mosaic Picture Frame"
+          description="Craft a one-of-a-kind mosaic frame — perfect as a gift or keepsake."
+          dateStr="Sat, Jun 7 · 3:00 PM"
+          location="Studio 42, Brooklyn NY"
+          price="$60"
+          imageSrc="/images/class-frame.png"
+          delay="fade-in-delay-3"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Preview -->
+  <section class="section">
+    <div class="container">
+      <div class="text-center fade-in">
+        <span class="section__label">Our Work</span>
+        <h2>From Our Workshops</h2>
+      </div>
+      <div class="gallery-strip fade-in">
+        <div class="gallery-strip__item"><img src="/images/class-suncatcher.png" alt="Mosaic suncatcher" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-pieces.png" alt="Mosaic pieces" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/class-coaster.png" alt="Mosaic coasters" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-workshop.png" alt="Workshop in progress" loading="lazy"></div>
+      </div>
+      <div class="text-center fade-in" style="margin-top: 32px;">
+        <a href="/gallery" class="btn btn--outline">View Full Gallery</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <CTABanner 
+        title="Join our next workshop"
+        description="Browse upcoming classes and reserve your spot today."
+        buttonText="View Upcoming Classes"
+        buttonLink="/classes"
+      />
+    </div>
+  </section>
+
+  <Lightbox />
+</Base>

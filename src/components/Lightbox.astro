@@ -1,0 +1,75 @@
+---
+// Lightbox.astro
+// A pure JS lightbox initialized on the client for gallery items.
+---
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox__close" aria-label="Close">&times;</button>
+  <button class="lightbox__nav lightbox__nav--prev" aria-label="Previous">&#8249;</button>
+  <img class="lightbox__img" id="lightbox-img" src="" alt="Gallery image">
+  <button class="lightbox__nav lightbox__nav--next" aria-label="Next">&#8250;</button>
+</div>
+
+<script>
+  // Lightbox logic
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+  const lightboxClose = document.querySelector('.lightbox__close');
+  const lightboxPrev = document.querySelector('.lightbox__nav--prev');
+  const lightboxNext = document.querySelector('.lightbox__nav--next');
+  let galleryItems = document.querySelectorAll('.gallery-item, .gallery-strip__item');
+  let currentIndex = 0;
+  let galleryImages: string[] = [];
+
+  const initLightbox = () => {
+    galleryItems = document.querySelectorAll('.gallery-item, .gallery-strip__item');
+    galleryImages = [];
+    if (lightbox && galleryItems.length) {
+      galleryItems.forEach((item, i) => {
+        const img = item.querySelector('img');
+        if (img) {
+          galleryImages.push(img.src);
+          item.addEventListener('click', () => {
+            currentIndex = i;
+            lightboxImg.src = galleryImages[currentIndex];
+            lightbox.classList.add('open');
+            document.body.style.overflow = 'hidden';
+          });
+        }
+      });
+    }
+  };
+
+  const closeLightbox = () => {
+    if (lightbox) {
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  };
+
+  if (lightbox) {
+    lightboxClose?.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+
+    lightboxPrev?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
+      lightboxImg.src = galleryImages[currentIndex];
+    });
+    lightboxNext?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentIndex = (currentIndex + 1) % galleryImages.length;
+      lightboxImg.src = galleryImages[currentIndex];
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') lightboxPrev?.click();
+      if (e.key === 'ArrowRight') lightboxNext?.click();
+    });
+  }
+
+  // Run init on initial load
+  initLightbox();
+</script>

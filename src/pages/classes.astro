@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+import ClassCard from '../components/ClassCard.astro';
+import CTABanner from '../components/CTABanner.astro';
+
+const title = "Classes — Piece x Piece Mosaics";
+const description = "Browse and book upcoming mosaic workshops. Suncatchers, coasters, picture frames, and more. All skill levels welcome.";
+---
+
+<Base title={title} description={description}>
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container fade-in">
+      <span class="section__label">Upcoming Workshops</span>
+      <h1>Our Classes</h1>
+      <p>Browse workshops and reserve your spot. All skill levels welcome.</p>
+    </div>
+  </section>
+
+  <!-- Classes Grid -->
+  <section class="section" style="padding-top: 40px;">
+    <div class="container">
+      <div class="classes-grid">
+        <ClassCard 
+          title="Suncatcher Mosaic Workshop"
+          description="Design a beautiful stained-glass-style suncatcher using colorful glass tiles. Perfect for beginners."
+          dateStr="Saturday, May 17 · 2:00 PM"
+          duration="2 hours"
+          location="Studio 42, Brooklyn NY"
+          price="$65"
+          imageSrc="/images/class-suncatcher.png"
+          badge="Limited Spots"
+          delay="fade-in-delay-1"
+        />
+        <ClassCard 
+          title="Mosaic Coaster Set"
+          description="Create a set of four stunning mosaic coasters. Learn cutting, arranging, and grouting techniques."
+          dateStr="Sunday, May 25 · 11:00 AM"
+          duration="2.5 hours"
+          location="The Maker Space, Williamsburg"
+          price="$55"
+          imageSrc="/images/class-coaster.png"
+          delay="fade-in-delay-2"
+        />
+        <ClassCard 
+          title="Mosaic Picture Frame"
+          description="Craft a unique mosaic picture frame — a perfect handmade gift or keepsake for your home."
+          dateStr="Saturday, June 7 · 3:00 PM"
+          duration="2 hours"
+          location="Studio 42, Brooklyn NY"
+          price="$60"
+          imageSrc="/images/class-frame.png"
+          badge="Limited Spots"
+          delay="fade-in-delay-3"
+        />
+      </div>
+
+      <!-- Private Events CTA -->
+      <div style="margin-top: 64px;">
+        <CTABanner 
+          title="Private Workshops & Events"
+          description="Planning a team outing, birthday party, or bachelorette? We'd love to host a private workshop for your group."
+          buttonText="Inquire About Private Events"
+          buttonLink="/contact"
+        />
+      </div>
+    </div>
+  </section>
+</Base>
