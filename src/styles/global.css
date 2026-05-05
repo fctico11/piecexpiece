@@ -154,7 +154,8 @@ p { max-width: 640px; }
   background: linear-gradient(180deg, var(--color-white) 0%, var(--color-beige) 100%);
   overflow: hidden;
 }
-.hero__content { text-align: center; margin-bottom: 40px; }
+.hero__layout { display: flex; flex-direction: column-reverse; gap: 32px; }
+.hero__content { text-align: center; margin-bottom: 0; }
 .hero__badge {
   display: inline-block; padding: 6px 16px; border-radius: 50px;
   background: rgba(95,184,176,0.12); color: var(--color-turquoise-vibrant);
@@ -404,7 +405,7 @@ p { max-width: 640px; }
 
 @media (min-width: 768px) {
   .hero { padding-top: 120px; padding-bottom: 80px; }
-  .hero__layout { display: flex; align-items: center; gap: 48px; }
+  .hero__layout { display: flex; align-items: center; gap: 48px; flex-direction: row; }
   .hero__content { text-align: left; flex: 1; margin-bottom: 0; }
   .hero__sub { margin-left: 0; }
   .hero__buttons { justify-content: flex-start; }
