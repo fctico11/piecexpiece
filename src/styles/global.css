@@ -150,11 +150,11 @@ p { max-width: 640px; }
 
 /* --- Hero --- */
 .hero {
-  padding-top: 100px; padding-bottom: 60px; position: relative;
+  padding-top: 90px; padding-bottom: 40px; position: relative;
   background: linear-gradient(180deg, var(--color-white) 0%, var(--color-beige) 100%);
   overflow: hidden;
 }
-.hero__layout { display: flex; flex-direction: column-reverse; gap: 32px; }
+.hero__layout { display: flex; flex-direction: column-reverse; gap: 20px; }
 .hero__content { text-align: center; margin-bottom: 0; }
 .hero__badge {
   display: inline-block; padding: 6px 16px; border-radius: 50px;
