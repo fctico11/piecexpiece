@@ -9,16 +9,18 @@ const description = "Browse and book upcoming mosaic workshops. Suncatchers, coa
 
 <Base title={title} description={description}>
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="page-header mosaic-section mosaic-section--light mosaic-clip-1">
     <div class="container fade-in">
-      <span class="section__label">Upcoming Workshops</span>
+      <span class="section__label" style="color: var(--color-primary-dark);">Upcoming Workshops</span>
       <h1>Our Classes</h1>
-      <p>Browse workshops and reserve your spot. All skill levels welcome.</p>
+      <p style="color: var(--color-primary-dark);">Browse workshops and reserve your spot. All skill levels welcome.</p>
     </div>
   </section>
 
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- Classes Grid -->
-  <section class="section" style="padding-top: 40px;">
+  <section class="section mosaic-section mosaic-section--amber mosaic-clip-2" style="padding-top: 40px;">
     <div class="container">
       <div class="classes-grid">
         <ClassCard 
@@ -28,7 +30,7 @@ const description = "Browse and book upcoming mosaic workshops. Suncatchers, coa
           duration="2 hours"
           location="Studio 42, Brooklyn NY"
           price="$65"
-          imageSrc="/images/class-suncatcher.png"
+          imageSrc="/images/gallery-2.jpg"
           badge="Limited Spots"
           delay="fade-in-delay-1"
         />
@@ -39,7 +41,7 @@ const description = "Browse and book upcoming mosaic workshops. Suncatchers, coa
           duration="2.5 hours"
           location="The Maker Space, Williamsburg"
           price="$55"
-          imageSrc="/images/class-coaster.png"
+          imageSrc="/images/gallery-3.jpg"
           delay="fade-in-delay-2"
         />
         <ClassCard 
@@ -49,14 +51,14 @@ const description = "Browse and book upcoming mosaic workshops. Suncatchers, coa
           duration="2 hours"
           location="Studio 42, Brooklyn NY"
           price="$60"
-          imageSrc="/images/class-frame.png"
+          imageSrc="/images/gallery-4.jpg"
           badge="Limited Spots"
           delay="fade-in-delay-3"
         />
       </div>
 
       <!-- Private Events CTA -->
-      <div style="margin-top: 64px;">
+      <div style="margin-top: 80px; margin-bottom: 40px;">
         <CTABanner 
           title="Private Workshops & Events"
           description="Planning a team outing, birthday party, or bachelorette? We'd love to host a private workshop for your group."

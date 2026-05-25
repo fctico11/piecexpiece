@@ -10,7 +10,7 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
 
 <Base title={title} description={description}>
   <!-- Hero -->
-  <section class="hero">
+  <section class="hero mosaic-section mosaic-section--light">
     <div class="container">
       <div class="hero__layout">
         <div class="hero__content fade-in">
@@ -22,28 +22,32 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
           </div>
         </div>
         <div class="hero__image fade-in fade-in-delay-2">
-          <img src="/images/hero.png" alt="Beautiful mosaic suncatcher created at a Piece x Piece workshop" />
+          <img src="/images/gallery-7.jpg" alt="Beautiful mosaic art created at a Piece x Piece workshop" />
         </div>
       </div>
     </div>
   </section>
 
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- Intro -->
-  <section class="section intro">
+  <section class="section intro mosaic-section mosaic-section--coral mosaic-clip-1">
     <div class="container">
       <div class="fade-in">
-        <span class="section__label">The Experience</span>
+        <span class="section__label" style="color: var(--color-primary-dark);">The Experience</span>
         <h2>Art-making for everyone</h2>
-        <p class="intro__text">Step away from the everyday and into a calming creative space. Our mosaic workshops blend artistic expression with the soothing benefits of art therapy — perfect for date nights, girls' nights, team-building, or simply treating yourself to something beautiful.</p>
+        <p class="intro__text" style="color: var(--color-primary-dark); font-weight: 400;">Step away from the everyday and into a calming creative space. Our mosaic workshops blend artistic expression with the soothing benefits of art therapy — perfect for date nights, girls' nights, team-building, or simply treating yourself to something beautiful.</p>
       </div>
     </div>
   </section>
 
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- Featured Classes -->
-  <section class="section section--beige">
+  <section class="section mosaic-section mosaic-section--emerald mosaic-clip-2">
     <div class="container">
       <div class="text-center fade-in">
-        <span class="section__label">Upcoming Workshops</span>
+        <span class="section__label" style="color: var(--color-primary-dark);">Upcoming Workshops</span>
         <h2>Featured Classes</h2>
       </div>
       <div class="classes-grid">
@@ -53,7 +57,7 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
           dateStr="Sat, May 17 · 2:00 PM"
           location="Studio 42, Brooklyn NY"
           price="$65"
-          imageSrc="/images/class-suncatcher.png"
+          imageSrc="/images/gallery-2.jpg"
           badge="Limited Spots"
           delay="fade-in-delay-1"
         />
@@ -63,7 +67,7 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
           dateStr="Sun, May 25 · 11:00 AM"
           location="The Maker Space, Williamsburg"
           price="$55"
-          imageSrc="/images/class-coaster.png"
+          imageSrc="/images/gallery-3.jpg"
           delay="fade-in-delay-2"
         />
         <ClassCard 
@@ -72,34 +76,38 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
           dateStr="Sat, Jun 7 · 3:00 PM"
           location="Studio 42, Brooklyn NY"
           price="$60"
-          imageSrc="/images/class-frame.png"
+          imageSrc="/images/gallery-4.jpg"
           delay="fade-in-delay-3"
         />
       </div>
     </div>
   </section>
 
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- Gallery Preview -->
-  <section class="section">
+  <section class="section mosaic-section mosaic-section--amber mosaic-clip-1">
     <div class="container">
       <div class="text-center fade-in">
-        <span class="section__label">Our Work</span>
+        <span class="section__label" style="color: var(--color-primary-dark);">Our Work</span>
         <h2>From Our Workshops</h2>
       </div>
       <div class="gallery-strip fade-in">
-        <div class="gallery-strip__item"><img src="/images/class-suncatcher.png" alt="Mosaic suncatcher" loading="lazy"></div>
-        <div class="gallery-strip__item"><img src="/images/gallery-pieces.png" alt="Mosaic pieces" loading="lazy"></div>
-        <div class="gallery-strip__item"><img src="/images/class-coaster.png" alt="Mosaic coasters" loading="lazy"></div>
-        <div class="gallery-strip__item"><img src="/images/gallery-workshop.png" alt="Workshop in progress" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-1.jpg" alt="Mosaic artwork" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-5.jpg" alt="Workshop in progress" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-6.jpg" alt="Finished mosaic" loading="lazy"></div>
+        <div class="gallery-strip__item"><img src="/images/gallery-8.jpg" alt="Mosaic materials" loading="lazy"></div>
       </div>
-      <div class="text-center fade-in" style="margin-top: 32px;">
-        <a href="/gallery" class="btn btn--outline">View Full Gallery</a>
+      <div class="text-center fade-in" style="margin-top: 48px;">
+        <a href="/gallery" class="btn btn--primary">View Full Gallery</a>
       </div>
     </div>
   </section>
 
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- CTA Banner -->
-  <section class="section" style="padding-top: 0;">
+  <section class="section mosaic-section mosaic-section--sapphire mosaic-clip-2" style="padding-bottom: 120px;">
     <div class="container">
       <CTABanner 
         title="Join our next workshop"
