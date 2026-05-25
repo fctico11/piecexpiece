@@ -23,8 +23,28 @@ const stripeClasses = await getActiveClasses();
 
   <div class="mosaic-divider"><span></span><span></span><span></span></div>
 
+  <!-- Private Lesson Banner -->
+  <section class="section private-lesson-banner mosaic-section mosaic-section--sapphire mosaic-clip-2" style="padding: 60px 0;">
+    <div class="container">
+      <div class="private-lesson__inner fade-in">
+        <div class="private-lesson__content">
+          <div class="private-lesson__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div>
+            <h3>Looking for a Private Lesson?</h3>
+            <p>One-on-one sessions tailored to your pace and creative vision. Perfect for gifts, special occasions, or simply a focused art experience.</p>
+          </div>
+        </div>
+        <a href="/contact" class="btn btn--turquoise">Book a Private Lesson</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
   <!-- Classes Grid -->
-  <section class="section mosaic-section mosaic-section--amber mosaic-clip-2" style="padding-top: 40px;">
+  <section class="section mosaic-section mosaic-section--amber mosaic-clip-1" style="padding-top: 40px;">
     <div class="container">
       <div class="classes-grid">
         {stripeClasses.length > 0 ? (
