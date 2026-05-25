@@ -2,9 +2,13 @@
 import Base from '../layouts/Base.astro';
 import ClassCard from '../components/ClassCard.astro';
 import CTABanner from '../components/CTABanner.astro';
+import { getActiveClasses } from '../lib/stripe';
 
 const title = "Classes — Piece x Piece Mosaics";
 const description = "Browse and book upcoming mosaic workshops. Suncatchers, coasters, picture frames, and more. All skill levels welcome.";
+
+// Fetch dynamic classes from Stripe
+const stripeClasses = await getActiveClasses();
 ---
 
 <Base title={title} description={description}>
@@ -23,38 +27,57 @@ const description = "Browse and book upcoming mosaic workshops. Suncatchers, coa
   <section class="section mosaic-section mosaic-section--amber mosaic-clip-2" style="padding-top: 40px;">
     <div class="container">
       <div class="classes-grid">
-        <ClassCard 
-          title="Suncatcher Mosaic Workshop"
-          description="Design a beautiful stained-glass-style suncatcher using colorful glass tiles. Perfect for beginners."
-          dateStr="Saturday, May 17 · 2:00 PM"
-          duration="2 hours"
-          location="Studio 42, Brooklyn NY"
-          price="$65"
-          imageSrc="/images/gallery-2.jpg"
-          badge="Limited Spots"
-          delay="fade-in-delay-1"
-        />
-        <ClassCard 
-          title="Mosaic Coaster Set"
-          description="Create a set of four stunning mosaic coasters. Learn cutting, arranging, and grouting techniques."
-          dateStr="Sunday, May 25 · 11:00 AM"
-          duration="2.5 hours"
-          location="The Maker Space, Williamsburg"
-          price="$55"
-          imageSrc="/images/gallery-3.jpg"
-          delay="fade-in-delay-2"
-        />
-        <ClassCard 
-          title="Mosaic Picture Frame"
-          description="Craft a unique mosaic picture frame — a perfect handmade gift or keepsake for your home."
-          dateStr="Saturday, June 7 · 3:00 PM"
-          duration="2 hours"
-          location="Studio 42, Brooklyn NY"
-          price="$60"
-          imageSrc="/images/gallery-4.jpg"
-          badge="Limited Spots"
-          delay="fade-in-delay-3"
-        />
+        {stripeClasses.length > 0 ? (
+          stripeClasses.map((cls, index) => (
+            <ClassCard 
+              title={cls.title}
+              description={cls.description}
+              dateStr={cls.dateStr}
+              duration={cls.duration}
+              location={cls.location}
+              price={cls.price}
+              imageSrc={cls.imageSrc}
+              badge={cls.badge}
+              paymentLink={cls.paymentLink}
+              delay={`fade-in-delay-${(index % 3) + 1}`}
+            />
+          ))
+        ) : (
+          <>
+            <ClassCard 
+              title="Suncatcher Mosaic Workshop"
+              description="Design a beautiful stained-glass-style suncatcher using colorful glass tiles. Perfect for beginners."
+              dateStr="Saturday, May 17 · 2:00 PM"
+              duration="2 hours"
+              location="Studio 42, Brooklyn NY"
+              price="$65"
+              imageSrc="/images/gallery-2.jpg"
+              badge="Limited Spots"
+              delay="fade-in-delay-1"
+            />
+            <ClassCard 
+              title="Mosaic Coaster Set"
+              description="Create a set of four stunning mosaic coasters. Learn cutting, arranging, and grouting techniques."
+              dateStr="Sunday, May 25 · 11:00 AM"
+              duration="2.5 hours"
+              location="The Maker Space, Williamsburg"
+              price="$55"
+              imageSrc="/images/gallery-3.jpg"
+              delay="fade-in-delay-2"
+            />
+            <ClassCard 
+              title="Mosaic Picture Frame"
+              description="Craft a unique mosaic picture frame — a perfect handmade gift or keepsake for your home."
+              dateStr="Saturday, June 7 · 3:00 PM"
+              duration="2 hours"
+              location="Studio 42, Brooklyn NY"
+              price="$60"
+              imageSrc="/images/gallery-4.jpg"
+              badge="Limited Spots"
+              delay="fade-in-delay-3"
+            />
+          </>
+        )}
       </div>
 
       <!-- Private Events CTA -->

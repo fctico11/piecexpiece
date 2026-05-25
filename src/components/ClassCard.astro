@@ -9,6 +9,7 @@ export interface Props {
   imageSrc: string;
   badge?: string;
   delay?: string;
+  paymentLink?: string;
 }
 
 const { 
@@ -20,7 +21,8 @@ const {
   price, 
   imageSrc, 
   badge, 
-  delay = "" 
+  delay = "",
+  paymentLink 
 } = Astro.props;
 ---
 
@@ -50,7 +52,11 @@ const {
     </div>
     <div class="class-card__price">{price} <span>/ person</span></div>
     <div class="class-card__footer">
-      <button class="btn btn--primary btn--full btn-tickets" data-class={title}>Get Tickets</button>
+      {paymentLink ? (
+        <a href={paymentLink} class="btn btn--primary btn--full" target="_blank" rel="noopener noreferrer">Get Tickets</a>
+      ) : (
+        <button class="btn btn--primary btn--full btn-tickets" data-class={title}>Get Tickets</button>
+      )}
       <span class="stripe-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Secure checkout powered by Stripe
@@ -60,7 +66,7 @@ const {
 </div>
 
 <script>
-  // Mock Stripe checkout
+  // Mock Stripe checkout fallback (only runs if paymentLink is NOT provided)
   const buttons = document.querySelectorAll('.btn-tickets');
   buttons.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -72,7 +78,7 @@ const {
       setTimeout(() => {
         target.innerHTML = 'Get Tickets';
         target.style.pointerEvents = '';
-        alert(`Stripe Checkout would open for: ${name}\n\nThis is a mockup — no real payment will be processed.`);
+        alert(`No Stripe link connected yet.\n\nOnce added in the CMS, this button will direct directly to checkout.`);
       }, 1500);
     });
   });

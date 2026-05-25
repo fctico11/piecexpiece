@@ -3,9 +3,14 @@ import Base from '../layouts/Base.astro';
 import ClassCard from '../components/ClassCard.astro';
 import CTABanner from '../components/CTABanner.astro';
 import Lightbox from '../components/Lightbox.astro';
+import { getActiveClasses } from '../lib/stripe';
 
 const title = "Piece x Piece Mosaics — Pop-Up Mosaic Workshops";
 const description = "Pop-up mosaic workshops designed for all skill levels. Create beautiful mosaic art in a relaxing, hands-on experience. No experience needed.";
+
+// Fetch dynamic classes from Stripe and limit to top 3 for the homepage
+const stripeClasses = await getActiveClasses();
+const featuredClasses = stripeClasses.slice(0, 3);
 ---
 
 <Base title={title} description={description}>
@@ -51,34 +56,53 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
         <h2>Featured Classes</h2>
       </div>
       <div class="classes-grid">
-        <ClassCard 
-          title="Suncatcher Mosaic Workshop"
-          description="Create a stunning glass mosaic suncatcher to hang in your window."
-          dateStr="Sat, May 17 · 2:00 PM"
-          location="Studio 42, Brooklyn NY"
-          price="$65"
-          imageSrc="/images/gallery-2.jpg"
-          badge="Limited Spots"
-          delay="fade-in-delay-1"
-        />
-        <ClassCard 
-          title="Mosaic Coaster Set"
-          description="Design and grout a set of four beautiful mosaic coasters to take home."
-          dateStr="Sun, May 25 · 11:00 AM"
-          location="The Maker Space, Williamsburg"
-          price="$55"
-          imageSrc="/images/gallery-3.jpg"
-          delay="fade-in-delay-2"
-        />
-        <ClassCard 
-          title="Mosaic Picture Frame"
-          description="Craft a one-of-a-kind mosaic frame — perfect as a gift or keepsake."
-          dateStr="Sat, Jun 7 · 3:00 PM"
-          location="Studio 42, Brooklyn NY"
-          price="$60"
-          imageSrc="/images/gallery-4.jpg"
-          delay="fade-in-delay-3"
-        />
+        {featuredClasses.length > 0 ? (
+          featuredClasses.map((cls, index) => (
+            <ClassCard 
+              title={cls.title}
+              description={cls.description}
+              dateStr={cls.dateStr}
+              duration={cls.duration}
+              location={cls.location}
+              price={cls.price}
+              imageSrc={cls.imageSrc}
+              badge={cls.badge}
+              paymentLink={cls.paymentLink}
+              delay={`fade-in-delay-${(index % 3) + 1}`}
+            />
+          ))
+        ) : (
+          <>
+            <ClassCard 
+              title="Suncatcher Mosaic Workshop"
+              description="Create a stunning glass mosaic suncatcher to hang in your window."
+              dateStr="Sat, May 17 · 2:00 PM"
+              location="Studio 42, Brooklyn NY"
+              price="$65"
+              imageSrc="/images/gallery-2.jpg"
+              badge="Limited Spots"
+              delay="fade-in-delay-1"
+            />
+            <ClassCard 
+              title="Mosaic Coaster Set"
+              description="Design and grout a set of four beautiful mosaic coasters to take home."
+              dateStr="Sun, May 25 · 11:00 AM"
+              location="The Maker Space, Williamsburg"
+              price="$55"
+              imageSrc="/images/gallery-3.jpg"
+              delay="fade-in-delay-2"
+            />
+            <ClassCard 
+              title="Mosaic Picture Frame"
+              description="Craft a one-of-a-kind mosaic frame — perfect as a gift or keepsake."
+              dateStr="Sat, Jun 7 · 3:00 PM"
+              location="Studio 42, Brooklyn NY"
+              price="$60"
+              imageSrc="/images/gallery-4.jpg"
+              delay="fade-in-delay-3"
+            />
+          </>
+        )}
       </div>
     </div>
   </section>
@@ -86,7 +110,7 @@ const description = "Pop-up mosaic workshops designed for all skill levels. Crea
   <div class="mosaic-divider"><span></span><span></span><span></span></div>
 
   <!-- Gallery Preview -->
-  <section class="section mosaic-section mosaic-section--amber mosaic-clip-1">
+  <section class="section mosaic-section mosaic-section--amber mosaic-clip-3">
     <div class="container">
       <div class="text-center fade-in">
         <span class="section__label" style="color: var(--color-primary-dark);">Our Work</span>
