@@ -457,6 +457,154 @@ p { max-width: 640px; }
 /* Intro Icon */
 .intro-icon { width: 40px; height: 40px; color: var(--color-turquoise-vibrant); margin: 0 auto 16px; display: block; }
 
+.intro__layout {
+  display: grid;
+  gap: 40px;
+  align-items: center;
+}
+
+.intro__content {
+  position: relative;
+  text-align: center;
+}
+
+.intro-mosaic-sparkle {
+  position: absolute;
+  inset: -34px 0 auto;
+  height: 90px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.intro-mosaic-sparkle span {
+  position: absolute;
+  display: block;
+  width: 30px;
+  height: 24px;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: inset 0 0 12px rgba(255,255,255,0.75), 0 8px 18px rgba(26,58,92,0.08);
+  animation: intro-glimmer 4.8s ease-in-out infinite;
+  clip-path: polygon(12% 8%, 94% 0, 100% 82%, 0 100%);
+}
+
+.intro-mosaic-sparkle span:nth-child(1) {
+  left: 6%;
+  top: 28px;
+  background: rgba(95,184,176,0.5);
+  transform: rotate(-14deg);
+}
+
+.intro-mosaic-sparkle span:nth-child(2) {
+  left: 26%;
+  top: 4px;
+  width: 22px;
+  height: 28px;
+  background: rgba(229,154,84,0.45);
+  animation-delay: 0.6s;
+  transform: rotate(18deg);
+}
+
+.intro-mosaic-sparkle span:nth-child(3) {
+  right: 12%;
+  top: 16px;
+  width: 34px;
+  height: 30px;
+  background: rgba(79,143,116,0.45);
+  animation-delay: 1.2s;
+  transform: rotate(11deg);
+}
+
+.intro-mosaic-sparkle span:nth-child(4) {
+  right: 32%;
+  top: 54px;
+  width: 18px;
+  height: 18px;
+  background: rgba(226,114,91,0.42);
+  animation-delay: 1.8s;
+  transform: rotate(35deg);
+}
+
+.intro-mosaic-sparkle span:nth-child(5) {
+  left: 48%;
+  top: 30px;
+  width: 26px;
+  height: 20px;
+  background: rgba(59,94,140,0.26);
+  animation-delay: 2.4s;
+  transform: rotate(-8deg);
+}
+
+@keyframes intro-glimmer {
+  0%, 100% { opacity: 0.42; filter: brightness(1); }
+  45% { opacity: 0.95; filter: brightness(1.35); }
+}
+
+.intro__text {
+  color: var(--color-primary-dark);
+  font-size: 1.08rem;
+  font-weight: 400;
+  line-height: 1.75;
+  margin: 18px auto 0;
+}
+
+.intro__included {
+  display: grid;
+  gap: 18px;
+}
+
+.intro-feature {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.75);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  transition: var(--transition);
+  clip-path: polygon(0 0, 100% 3%, 98% 100%, 2% 98%);
+}
+
+.intro-feature:hover {
+  background: rgba(255,255,255,0.82);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+}
+
+.intro-feature__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-turquoise-vibrant), var(--color-emerald));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 12px rgba(61,168,158,0.25);
+}
+
+.intro-feature__icon--amber {
+  background: linear-gradient(135deg, var(--color-amber), var(--color-emerald));
+}
+
+.intro-feature__icon--coral {
+  background: linear-gradient(135deg, var(--color-coral), var(--color-amber));
+}
+
+.intro-feature__icon svg {
+  width: 22px;
+  height: 22px;
+  color: var(--color-white);
+}
+
+.intro-feature h3 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.intro-feature p {
+  color: var(--color-text-light);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 /* --- Private Lesson Banner --- */
 .private-lesson__inner {
   display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center;
@@ -564,6 +712,29 @@ p { max-width: 640px; }
 @media (min-width: 768px) {
   .private-lesson__inner { flex-direction: row; text-align: left; gap: 32px; }
   .private-lesson__content { flex-direction: row; align-items: center; gap: 20px; }
+  .intro__layout {
+    grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+    gap: 56px;
+  }
+  .intro__content {
+    text-align: left;
+  }
+  .intro-icon {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .intro__text {
+    margin-left: 0;
+  }
+  .intro-mosaic-sparkle {
+    inset: -42px -30px auto -20px;
+  }
+  .intro-mosaic-sparkle span:nth-child(1) {
+    left: -2%;
+  }
+  .intro-mosaic-sparkle span:nth-child(3) {
+    right: 8%;
+  }
   .private-option {
     grid-template-columns: auto 1fr auto;
     gap: 28px;
