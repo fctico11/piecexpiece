@@ -1,17 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 
-const title = "Contact — Piece x Piece Mosaics";
-const description = "Get in touch with Piece x Piece Mosaics. Book a private workshop, ask a question, or say hello.";
+const title = "Contact & Booking Inquiry — Piece x Piece Mosaics";
+const description = "Get in touch with Piece x Piece Mosaics. Ask a question, request a private lesson, or plan a private mosaic workshop.";
 ---
 
 <Base title={title} description={description}>
   <!-- Page Header -->
   <section class="page-header mosaic-section mosaic-section--light mosaic-clip-1">
     <div class="container fade-in">
-      <span class="section__label" style="color: var(--color-primary-dark);">Say Hello</span>
-      <h1>Contact Us</h1>
-      <p style="color: var(--color-primary-dark);">Have a question or want to book a private workshop? We'd love to hear from you.</p>
+      <span class="section__label" style="color: var(--color-primary-dark);">Start an Inquiry</span>
+      <h1>Contact & Private Booking</h1>
+      <p style="color: var(--color-primary-dark);">Tell us what you have in mind, and we'll follow up with availability, pricing, and next steps.</p>
     </div>
   </section>
 
@@ -22,18 +22,88 @@ const description = "Get in touch with Piece x Piece Mosaics. Book a private wor
     <div class="container">
       <form class="contact-form fade-in" id="contact-form">
         <div class="form-group">
-          <label for="name">Name</label>
+          <label for="request-type">What are you interested in? <span class="required-mark">Required</span></label>
+          <select id="request-type" name="requestType" required>
+            <option value="">Choose one</option>
+            <option value="general">General question</option>
+            <option value="public-class">Upcoming public class</option>
+            <option value="private-lesson">Private lesson</option>
+            <option value="private-event">Private workshop or event</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="name">Name <span class="required-mark">Required</span></label>
           <input type="text" id="name" name="name" placeholder="Your name" required>
         </div>
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">Email <span class="required-mark">Required</span></label>
           <input type="email" id="email" name="email" placeholder="your@email.com" required>
         </div>
-        <div class="form-group">
-          <label for="message">Message</label>
-          <textarea id="message" name="message" placeholder="Tell us what you're interested in — private events, group bookings, questions about classes…" required></textarea>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" placeholder="Optional">
+          </div>
+          <div class="form-group" data-date-field>
+            <label for="preferred-date"><span data-date-label>Preferred Date</span></label>
+            <input type="text" id="preferred-date" name="preferredDate" placeholder="Flexible, or a specific date">
+          </div>
         </div>
-        <button type="submit" class="btn btn--primary btn--full">Send Message</button>
+
+        <div class="form-row inquiry-details inquiry-details--lesson" data-inquiry-panel="private-lesson" hidden>
+          <div class="form-group">
+            <label for="lesson-format">Lesson Format</label>
+            <select id="lesson-format" name="lessonFormat">
+              <option value="">Choose one</option>
+              <option value="one-on-one">One-on-one</option>
+              <option value="pair">Two people</option>
+              <option value="small-group">Small private group</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lesson-goal">Creative Goal</label>
+            <input type="text" id="lesson-goal" name="lessonGoal" placeholder="Beginner lesson, gift project, specific idea...">
+          </div>
+        </div>
+
+        <div class="inquiry-details inquiry-details--event" data-inquiry-panel="private-event" hidden>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="event-type">Event Type</label>
+              <select id="event-type" name="eventType">
+                <option value="">Choose one</option>
+                <option value="birthday">Birthday party</option>
+                <option value="team-event">Team event</option>
+                <option value="bachelorette">Bachelorette or celebration</option>
+                <option value="family-friends">Family or friends gathering</option>
+                <option value="pop-up">Pop-up workshop</option>
+                <option value="other">Something else</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="group-size">Estimated Group Size</label>
+              <input type="number" id="group-size" name="groupSize" min="1" placeholder="How many people?">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-location">Location</label>
+            <input type="text" id="event-location" name="eventLocation" placeholder="Venue, home, office, or TBD">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="message">Message <span class="required-mark">Required</span></label>
+          <textarea id="message" name="message" placeholder="Share any details that would help us plan the right mosaic experience…" required></textarea>
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn btn--primary btn--full">Send Message</button>
+          <p class="form-privacy-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            Your information is private and secure. We only use it to respond to your inquiry.
+          </p>
+        </div>
       </form>
 
       <div class="contact-info fade-in">
@@ -49,6 +119,53 @@ const description = "Get in touch with Piece x Piece Mosaics. Book a private wor
 
   <script>
     const contactForm = document.getElementById('contact-form');
+    const requestType = document.getElementById('request-type') as HTMLSelectElement | null;
+    const panels = document.querySelectorAll<HTMLElement>('[data-inquiry-panel]');
+    const dateField = document.querySelector<HTMLElement>('[data-date-field]');
+    const dateLabel = document.querySelector<HTMLElement>('[data-date-label]');
+    const dateInput = document.getElementById('preferred-date') as HTMLInputElement | null;
+
+    const requestCopy = {
+      'general': 'Share your question here.',
+      'public-class': 'Let us know which class you are interested in and any questions before booking.',
+      'private-lesson': 'Tell us about your experience level, project idea, and any timing preferences.',
+      'private-event': 'Tell us about the occasion, group size, location, and preferred timing.'
+    };
+
+    function syncInquiryFields() {
+      if (!requestType) return;
+      const selectedType = requestType.value;
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.inquiryPanel !== selectedType;
+      });
+
+      if (dateField && dateLabel && dateInput) {
+        dateField.hidden = !['public-class', 'private-lesson', 'private-event'].includes(selectedType);
+        if (selectedType === 'public-class') {
+          dateLabel.textContent = 'Date of Class';
+          dateInput.placeholder = 'Class date or workshop name';
+        } else {
+          dateLabel.textContent = 'Preferred Date';
+          dateInput.placeholder = 'Flexible, or a specific date';
+        }
+      }
+
+      const message = document.getElementById('message') as HTMLTextAreaElement | null;
+      if (message && selectedType in requestCopy) {
+        message.placeholder = requestCopy[selectedType as keyof typeof requestCopy];
+      }
+    }
+
+    if (requestType) {
+      const params = new URLSearchParams(window.location.search);
+      const initialType = params.get('type');
+      if (initialType && Array.from(requestType.options).some(option => option.value === initialType)) {
+        requestType.value = initialType;
+      }
+      requestType.addEventListener('change', syncInquiryFields);
+      syncInquiryFields();
+    }
+
     if (contactForm) {
       contactForm.addEventListener('submit', (e) => {
         e.preventDefault();

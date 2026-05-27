@@ -4,8 +4,8 @@ import ClassCard from '../components/ClassCard.astro';
 import CTABanner from '../components/CTABanner.astro';
 import { getActiveClasses } from '../lib/stripe';
 
-const title = "Classes — Piece x Piece Mosaics";
-const description = "Browse and book upcoming mosaic workshops. Suncatchers, coasters, picture frames, and more. All skill levels welcome.";
+const title = "Classes & Private Workshops — Piece x Piece Mosaics";
+const description = "Browse upcoming mosaic classes, book private lessons, or plan a private mosaic workshop for birthdays, events, and small groups.";
 
 // Fetch dynamic classes from Stripe
 const stripeClasses = await getActiveClasses();
@@ -15,28 +15,13 @@ const stripeClasses = await getActiveClasses();
   <!-- Page Header -->
   <section class="page-header mosaic-section mosaic-section--light mosaic-clip-1">
     <div class="container fade-in">
-      <span class="section__label" style="color: var(--color-primary-dark);">Upcoming Workshops</span>
-      <h1>Our Classes</h1>
-      <p style="color: var(--color-primary-dark);">Browse workshops and reserve your spot. All skill levels welcome.</p>
-    </div>
-  </section>
-
-  <div class="mosaic-divider"><span></span><span></span><span></span></div>
-
-  <!-- Private Lesson Banner -->
-  <section class="section private-lesson-banner mosaic-section mosaic-section--sapphire mosaic-clip-2" style="padding: 60px 0;">
-    <div class="container">
-      <div class="private-lesson__inner fade-in">
-        <div class="private-lesson__content">
-          <div class="private-lesson__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </div>
-          <div>
-            <h3>Looking for a Private Lesson?</h3>
-            <p>One-on-one sessions tailored to your pace and creative vision. Perfect for gifts, special occasions, or simply a focused art experience.</p>
-          </div>
-        </div>
-        <a href="/contact" class="btn btn--turquoise">Book a Private Lesson</a>
+      <span class="section__label" style="color: var(--color-primary-dark);">Book a Mosaic Experience</span>
+      <h1>Mosaic Classes & Private Workshops</h1>
+      <p style="color: var(--color-primary-dark);">Join an upcoming public class, schedule a private lesson, or plan a hands-on mosaic workshop for your group.</p>
+      <div class="classes-jump-links" aria-label="Class page sections">
+        <a href="#upcoming-classes">Upcoming Classes</a>
+        <a href="#private-lessons">Private Lessons</a>
+        <a href="#private-events">Private Events</a>
       </div>
     </div>
   </section>
@@ -44,8 +29,14 @@ const stripeClasses = await getActiveClasses();
   <div class="mosaic-divider"><span></span><span></span><span></span></div>
 
   <!-- Classes Grid -->
-  <section class="section mosaic-section mosaic-section--amber mosaic-clip-1" style="padding-top: 40px;">
+  <section id="upcoming-classes" class="section mosaic-section mosaic-section--amber mosaic-clip-1" style="padding-top: 40px;">
     <div class="container">
+      <div class="section-heading fade-in">
+        <span class="section__label">Public Schedule</span>
+        <h2>Upcoming Classes</h2>
+        <p>Reserve a seat in one of our scheduled workshops. Materials are provided, beginners are welcome, and every class ends with a finished piece to take home.</p>
+      </div>
+
       <div class="classes-grid">
         {stripeClasses.length > 0 ? (
           stripeClasses.map((cls, index) => (
@@ -99,16 +90,62 @@ const stripeClasses = await getActiveClasses();
           </>
         )}
       </div>
+    </div>
+  </section>
 
-      <!-- Private Events CTA -->
-      <div style="margin-top: 80px; margin-bottom: 40px;">
-        <CTABanner 
-          title="Private Workshops & Events"
-          description="Planning a team outing, birthday party, or bachelorette? We'd love to host a private workshop for your group."
-          buttonText="Inquire About Private Events"
-          buttonLink="/contact"
-        />
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
+  <!-- Private Offerings -->
+  <section class="section mosaic-section mosaic-section--sapphire mosaic-clip-2">
+    <div class="container">
+      <div class="section-heading fade-in">
+        <span class="section__label">Private Booking</span>
+        <h2>Make It More Personal</h2>
+        <p>Private sessions are designed around your pace, your people, and the kind of mosaic experience you want to create.</p>
       </div>
+
+      <div class="private-options">
+        <article id="private-lessons" class="private-option fade-in fade-in-delay-1">
+          <div class="private-option__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </div>
+          <div class="private-option__body">
+            <span class="private-option__eyebrow">One-on-one or small private sessions</span>
+            <h3>Private Lessons</h3>
+            <p>Personal instruction tailored to your creative goals. Great for beginners, gifts, special occasions, or anyone who wants a slower, focused mosaic experience.</p>
+            <ul class="private-option__list">
+              <li>Flexible scheduling</li>
+              <li>Project guidance and materials included</li>
+              <li>Ideal for individuals, pairs, or very small groups</li>
+            </ul>
+          </div>
+          <a href="/contact?type=private-lesson" class="btn btn--turquoise">Book a Private Lesson</a>
+        </article>
+
+        <article id="private-events" class="private-option fade-in fade-in-delay-2">
+          <div class="private-option__icon private-option__icon--coral">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18"/><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v11H3Z"/><path d="M7 6V4"/><path d="M17 6V4"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/></svg>
+          </div>
+          <div class="private-option__body">
+            <span class="private-option__eyebrow">Birthdays, team outings, parties, and pop-ups</span>
+            <h3>Private Workshops & Events</h3>
+            <p>Bring a mosaic workshop to your celebration, gathering, or organization. We can shape the project, timing, and setup around your group.</p>
+            <ul class="private-option__list">
+              <li>Birthday parties, bachelorettes, team events, and family gatherings</li>
+              <li>Group-friendly project options</li>
+              <li>Available for hosted or pop-up workshop formats</li>
+            </ul>
+          </div>
+          <a href="/contact?type=private-event" class="btn btn--primary">Inquire About Events</a>
+        </article>
+      </div>
+
+      <CTABanner 
+        title="Not Sure What Fits?"
+        description="Tell us your date, group size, and the kind of experience you have in mind. We'll help you choose the right format."
+        buttonText="Start an Inquiry"
+        buttonLink="/contact"
+      />
     </div>
   </section>
 </Base>
