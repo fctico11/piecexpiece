@@ -3,6 +3,7 @@ import SEOHead from '../components/SEOHead.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
+import tokens from '../data/tokens.json';
 
 export interface Props {
   title: string;
@@ -12,18 +13,41 @@ export interface Props {
 }
 
 const { title, description, image, type } = Astro.props;
+
+const headingFont = tokens.fonts.heading;
+const bodyFont = tokens.fonts.body;
+const toGoogleParam = (name: string) => name.replace(/ /g, '+');
+const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${toGoogleParam(headingFont)}:ital,wght@0,400;1,400&family=${toGoogleParam(bodyFont)}:wght@300;400;500;600&display=swap`;
+
+const colorVars = Object.entries(tokens.colors).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+const fontVars = `  --font-heading: '${headingFont}', Georgia, serif;\n  --font-body: '${bodyFont}', -apple-system, sans-serif;`;
+const shapeEntries = Object.entries(tokens.shapes).filter(([k]) => k.startsWith('--'));
+const shapeVars = shapeEntries.map(([k, v]) => `  ${k}: ${v};`).join('\n');
+const rootBlock = `:root {\n${colorVars}\n${fontVars}\n${shapeVars}\n}`;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <SEOHead title={title} description={description} image={image} type={type} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href={googleFontsUrl} />
+    <style is:inline set:html={rootBlock}></style>
+    <!-- Activates only when embedded inside the theme editor iframe -->
+    <script>
+      if (window !== window.top && new URLSearchParams(location.search).has('__editor')) {
+        const s = document.createElement('script');
+        s.src = '/editor-bridge.js';
+        document.head.appendChild(s);
+      }
+    </script>
   </head>
   <body>
     <Navbar />
     <slot />
     <Footer />
-    
+
     <script>
       // Global scroll animations
       const fadeEls = document.querySelectorAll('.fade-in');

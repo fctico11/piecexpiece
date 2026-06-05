@@ -1,0 +1,942 @@
+---
+export const prerender = false;
+
+import { createHash } from 'crypto';
+import tokens from '../../data/tokens.json';
+
+// ── Auth check ──────────────────────────────────────────────────────────────
+const password = import.meta.env.ADMIN_PASSWORD ?? '';
+const expectedCookie = password
+  ? createHash('sha256').update(password + ':pxp-editor').digest('hex')
+  : null;
+
+const cookie = Astro.request.headers.get('cookie') ?? '';
+const match  = cookie.match(/(?:^|;\s*)pxp_auth=([^;]+)/);
+const isAuth = expectedCookie && match?.[1] === expectedCookie;
+
+const loginError = Astro.url.searchParams.get('error') === '1';
+
+// ── Token metadata shown in the sidebar ────────────────────────────────────
+const COLOR_META: Record<string, { label: string; group: string }> = {
+  '--color-primary':          { label: 'Primary',          group: 'Brand' },
+  '--color-primary-light':    { label: 'Primary Light',    group: 'Brand' },
+  '--color-primary-dark':     { label: 'Primary Dark',     group: 'Brand' },
+  '--color-turquoise':        { label: 'Turquoise',        group: 'Accents' },
+  '--color-turquoise-vibrant':{ label: 'Turquoise Vibrant',group: 'Accents' },
+  '--color-amber':            { label: 'Amber',            group: 'Accents' },
+  '--color-coral':            { label: 'Coral',            group: 'Accents' },
+  '--color-emerald':          { label: 'Emerald',          group: 'Accents' },
+  '--color-sapphire':         { label: 'Sapphire',         group: 'Accents' },
+  '--color-beige':            { label: 'Page Background',  group: 'Backgrounds' },
+  '--color-white':            { label: 'White',            group: 'Backgrounds' },
+  '--color-grout':            { label: 'Grout / Footer',   group: 'Backgrounds' },
+  '--color-text':             { label: 'Body Text',        group: 'Text' },
+  '--color-text-light':       { label: 'Subtle Text',      group: 'Text' },
+};
+
+const HEADING_FONTS = [
+  'DM Serif Display', 'Playfair Display', 'Cormorant Garamond',
+  'Libre Baskerville', 'Josefin Sans', 'Raleway', 'Montserrat',
+];
+
+const BODY_FONTS = [
+  'Inter', 'DM Sans', 'Nunito', 'Lato', 'Open Sans', 'Poppins', 'Source Sans 3',
+];
+
+const GROUPS = ['Brand', 'Accents', 'Backgrounds', 'Text'];
+const colorValues: Record<string, string> = tokens.colors;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Theme Editor — Piece x Piece</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; }
+
+    /* ── Login screen ──────────────────────────────────────────────────────── */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #0f1117;
+    }
+    .login-card {
+      background: #1a1f2e; border: 1px solid #2d3548; border-radius: 12px;
+      padding: 48px 40px; width: 360px; text-align: center;
+    }
+    .login-logo { font-size: 1.5rem; font-weight: 700; color: #5fb8b0; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .login-sub  { font-size: 0.85rem; color: #64748b; margin-bottom: 32px; }
+    .login-card input[type="password"] {
+      width: 100%; padding: 12px 16px; background: #0f1117;
+      border: 1px solid #2d3548; border-radius: 8px; color: #e2e8f0;
+      font-size: 1rem; outline: none; margin-bottom: 12px; transition: border-color .2s;
+    }
+    .login-card input[type="password"]:focus { border-color: #5fb8b0; }
+    .login-card button {
+      width: 100%; padding: 12px; background: #5fb8b0; color: #fff;
+      border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .login-card button:hover { background: #3da89e; }
+    .login-error { color: #e2725b; font-size: 0.82rem; margin-bottom: 12px; }
+
+    /* ── Editor shell ──────────────────────────────────────────────────────── */
+    .editor-wrap { display: flex; flex-direction: column; height: 100vh; }
+
+    /* Top bar */
+    .topbar {
+      flex-shrink: 0; height: 52px; background: #1a1f2e;
+      border-bottom: 1px solid #2d3548;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; gap: 12px; z-index: 10;
+    }
+    .topbar__brand { font-size: 0.88rem; font-weight: 700; color: #5fb8b0; letter-spacing: 0.04em; white-space: nowrap; }
+    .topbar__hint  { font-size: 0.78rem; color: #475569; flex: 1; text-align: center; }
+    .topbar__actions { display: flex; align-items: center; gap: 10px; }
+    .badge-unsaved {
+      font-size: 0.75rem; color: #e59a54; background: rgba(229,154,84,.12);
+      border: 1px solid rgba(229,154,84,.3); border-radius: 20px; padding: 2px 10px;
+      opacity: 0; transition: opacity .3s; white-space: nowrap;
+    }
+    .badge-unsaved.visible { opacity: 1; }
+    .btn-publish {
+      padding: 8px 20px; background: #3da89e; color: #fff; border: none;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: background .2s, opacity .2s; white-space: nowrap;
+    }
+    .btn-publish:hover:not(:disabled) { background: #5fb8b0; }
+    .btn-publish:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-reset {
+      padding: 8px 14px; background: transparent; color: #64748b;
+      border: 1px solid #2d3548; border-radius: 8px;
+      font-size: 0.82rem; cursor: pointer; transition: all .2s;
+    }
+    .btn-reset:hover { color: #e2e8f0; border-color: #475569; }
+
+    /* ── Body row (iframe + sidebar) ─────────────────────────────────────── */
+    .editor-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* Preview pane */
+    .preview-pane { flex: 1; position: relative; background: #080b10; }
+    .preview-pane iframe {
+      width: 100%; height: 100%; border: none; display: block;
+    }
+    .preview-loading {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; background: #0f1117; color: #475569;
+      font-size: 0.85rem; gap: 10px; pointer-events: none;
+      transition: opacity .4s;
+    }
+    .preview-loading.done { opacity: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #2d3548;
+      border-top-color: #5fb8b0; border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px; flex-shrink: 0; background: #1a1f2e;
+      border-left: 1px solid #2d3548; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2d3548; border-radius: 3px; }
+
+    .sidebar-section { padding: 16px 16px 0; }
+    .sidebar-section:last-child { padding-bottom: 24px; }
+    .sidebar-heading {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #475569; padding: 12px 0 8px;
+      border-top: 1px solid #2d3548; margin-top: 4px;
+    }
+    .sidebar-heading:first-child { border-top: none; margin-top: 0; }
+
+    /* Click hint banner */
+    .click-hint {
+      margin: 12px 16px; padding: 10px 12px;
+      background: rgba(61,168,158,.08); border: 1px solid rgba(61,168,158,.2);
+      border-radius: 8px; font-size: 0.78rem; color: #94a3b8; line-height: 1.5;
+      text-align: center;
+    }
+    .click-hint strong { color: #5fb8b0; }
+
+    /* Active click notification */
+    .click-notice {
+      margin: 12px 16px 0; padding: 8px 12px;
+      background: rgba(229,154,84,.08); border: 1px solid rgba(229,154,84,.25);
+      border-radius: 8px; font-size: 0.78rem; color: #e59a54;
+      display: none; align-items: center; gap: 8px;
+    }
+    .click-notice.visible { display: flex; }
+
+    /* Color rows */
+    .color-row {
+      display: flex; align-items: center; gap: 10px; padding: 6px 8px;
+      border-radius: 8px; cursor: pointer; transition: background .15s;
+      position: relative;
+    }
+    .color-row:hover { background: rgba(255,255,255,.04); }
+    .color-row.highlighted {
+      background: rgba(61,168,158,.12);
+      outline: 1px solid rgba(61,168,158,.35);
+    }
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.1); cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .color-swatch:hover { transform: scale(1.18); box-shadow: 0 0 0 3px rgba(61,168,158,.45); }
+    .color-swatch.cp-open  { box-shadow: 0 0 0 3px #5fb8b0; transform: scale(1.18); }
+
+    /* ── Color Picker popover ─────────────────────────────────────────────── */
+    #cpWrap {
+      position: fixed; z-index: 99999; display: none;
+      background: #1a1f2e; border: 1px solid #2d3548; border-radius: 14px;
+      padding: 16px 16px 14px; box-shadow: 0 16px 48px rgba(0,0,0,.75);
+      width: 252px; user-select: none;
+    }
+    #cpWrap canvas { display: block; margin: 0 auto; cursor: crosshair; touch-action: none; }
+    .cp-bottom { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .cp-preview {
+      width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.15);
+    }
+    .cp-hex {
+      flex: 1; padding: 8px 10px; background: #0f1117;
+      border: 1px solid #2d3548; border-radius: 8px; color: #e2e8f0;
+      font: 600 0.85rem 'SF Mono','Fira Code',monospace;
+      letter-spacing: .05em; outline: none; transition: border-color .2s;
+    }
+    .cp-hex:focus { border-color: #5fb8b0; }
+    .cp-apply {
+      padding: 8px 13px; background: #3da89e; color: #fff; border: none;
+      border-radius: 8px; font: 600 0.82rem sans-serif; cursor: pointer;
+      transition: background .2s; white-space: nowrap;
+    }
+    .cp-apply:hover { background: #5fb8b0; }
+    .color-label { flex: 1; font-size: 0.82rem; color: #cbd5e1; }
+    .color-hex {
+      font-size: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #64748b; background: #0f1117; border: 1px solid #2d3548;
+      border-radius: 5px; padding: 3px 7px; width: 74px; text-align: center;
+      outline: none; transition: border-color .2s;
+    }
+    .color-hex:focus { border-color: #5fb8b0; color: #e2e8f0; }
+
+    /* Font selects */
+    .font-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .font-label { font-size: 0.78rem; color: #64748b; }
+    .font-select {
+      width: 100%; padding: 8px 10px; background: #0f1117;
+      border: 1px solid #2d3548; border-radius: 8px; color: #e2e8f0;
+      font-size: 0.85rem; outline: none; cursor: pointer; transition: border-color .2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      padding-right: 30px;
+    }
+    .font-select:focus { border-color: #5fb8b0; }
+    .font-preview {
+      font-size: 1.1rem; color: #94a3b8; padding: 6px 0 2px; line-height: 1.3;
+    }
+
+    /* Publish status */
+    .publish-status {
+      margin: 12px 16px; padding: 10px 12px; border-radius: 8px;
+      font-size: 0.82rem; display: none; align-items: center; gap: 8px;
+    }
+    .publish-status.publishing {
+      display: flex; background: rgba(61,168,158,.08); border: 1px solid rgba(61,168,158,.2); color: #5fb8b0;
+    }
+    .publish-status.success {
+      display: flex; background: rgba(79,143,116,.1); border: 1px solid rgba(79,143,116,.3); color: #4f8f74;
+    }
+    .publish-status.error {
+      display: flex; background: rgba(226,114,91,.1); border: 1px solid rgba(226,114,91,.3); color: #e2725b;
+    }
+
+    /* Page nav tabs */
+    .page-nav { display: flex; gap: 4px; padding: 8px 16px 0; flex-wrap: wrap; }
+    .page-tab {
+      font-size: 0.75rem; padding: 5px 10px; border-radius: 6px;
+      background: #0f1117; border: 1px solid #2d3548; color: #64748b;
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .page-tab:hover  { color: #e2e8f0; border-color: #475569; }
+    .page-tab.active { background: rgba(61,168,158,.12); border-color: rgba(61,168,158,.4); color: #5fb8b0; }
+
+    /* Shape presets */
+    .shape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .shape-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 10px 8px; background: #0f1117; border: 1px solid #2d3548;
+      border-radius: 8px; cursor: pointer; transition: all .2s; color: #64748b;
+    }
+    .shape-btn:hover { border-color: #475569; color: #94a3b8; }
+    .shape-btn.active { background: rgba(61,168,158,.1); border-color: rgba(61,168,158,.5); color: #5fb8b0; }
+    .shape-btn svg { width: 52px; height: 28px; }
+    .shape-btn span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+{!isAuth ? (
+  <!-- ── Login screen ────────────────────────────────────────────────────── -->
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">Piece x Piece</div>
+      <div class="login-sub">Theme Editor — Admin Access</div>
+      {loginError && <div class="login-error">Incorrect password. Please try again.</div>}
+      <form method="POST" action="/api/login">
+        <input type="password" name="password" placeholder="Password" autofocus required />
+        <button type="submit">Sign In</button>
+      </form>
+    </div>
+  </div>
+) : (
+  <!-- ── Editor ─────────────────────────────────────────────────────────── -->
+  <div class="editor-wrap">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <span class="topbar__brand">✦ Piece x Piece — Theme Editor</span>
+      <span class="topbar__hint" id="topHint">Click any element in the preview to edit its color</span>
+      <div class="topbar__actions">
+        <span class="badge-unsaved" id="unsavedBadge">Unsaved changes</span>
+        <button class="btn-reset" id="btnReset">Reset</button>
+        <button class="btn-publish" id="btnPublish">Publish Changes →</button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="editor-body">
+
+      <!-- Preview iframe -->
+      <div class="preview-pane">
+        <div class="preview-loading" id="previewLoading">
+          <div class="spinner"></div> Loading preview…
+        </div>
+        <iframe id="previewFrame" src="/?__editor=1" title="Site preview"></iframe>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+
+        <!-- Click hint -->
+        <div class="click-hint">
+          <strong>Click</strong> any element in the preview to jump to its color tokens
+        </div>
+
+        <!-- Click notice (shown when element is clicked) -->
+        <div class="click-notice" id="clickNotice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="clickNoticeText">Tokens highlighted below</span>
+        </div>
+
+        <!-- Publish status -->
+        <div class="publish-status" id="publishStatus"></div>
+
+        <!-- Page nav -->
+        <div class="sidebar-section">
+          <div class="sidebar-heading">Preview Page</div>
+          <div class="page-nav" id="pageNav">
+            {[
+              { label: 'Home',    href: '/' },
+              { label: 'Classes', href: '/classes' },
+              { label: 'About',   href: '/about' },
+              { label: 'Gallery', href: '/gallery' },
+              { label: 'Contact', href: '/contact' },
+            ].map(p => (
+              <button class:list={['page-tab', p.href === '/' && 'active']} data-href={p.href}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <!-- Color groups -->
+        {GROUPS.map(group => (
+          <div class="sidebar-section">
+            <div class="sidebar-heading">{group}</div>
+            {Object.entries(COLOR_META)
+              .filter(([, m]) => m.group === group)
+              .map(([token, meta]) => {
+                const value = colorValues[token] ?? '#000000';
+                return (
+                  <div class="color-row" data-token={token}>
+                    <div class="color-swatch" data-token={token} style={`background:${value}`} title="Click to open color picker"></div>
+                    <span class="color-label">{meta.label}</span>
+                    <input type="text" class="color-hex" value={value} data-token={token} maxlength={9} spellcheck={false} />
+                  </div>
+                );
+              })}
+          </div>
+        ))}
+
+        <!-- Typography -->
+        <div class="sidebar-section">
+          <div class="sidebar-heading">Typography</div>
+
+          <div class="font-row">
+            <div class="font-label">Heading font</div>
+            <select class="font-select" id="selectHeading">
+              {HEADING_FONTS.map(f => (
+                <option value={f} selected={f === tokens.fonts.heading}>{f}</option>
+              ))}
+            </select>
+            <div class="font-preview" id="previewHeading" style={`font-family:'${tokens.fonts.heading}',Georgia,serif`}>
+              The quick brown fox
+            </div>
+          </div>
+
+          <div class="font-row">
+            <div class="font-label">Body font</div>
+            <select class="font-select" id="selectBody">
+              {BODY_FONTS.map(f => (
+                <option value={f} selected={f === tokens.fonts.body}>{f}</option>
+              ))}
+            </select>
+            <div class="font-preview" id="previewBody" style={`font-family:'${tokens.fonts.body}',-apple-system,sans-serif; font-size:.92rem`}>
+              Pop-up mosaic workshops for all skill levels.
+            </div>
+          </div>
+
+        <!-- Section Shapes -->
+        <div class="sidebar-section">
+          <div class="sidebar-heading">Section Shapes</div>
+          <div class="shape-grid" id="shapeGrid">
+            <!-- Flat -->
+            <button class="shape-btn" data-shape="flat">
+              <svg viewBox="0 0 52 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="4" width="50" height="8" fill="currentColor" opacity=".25" rx="1"/>
+                <rect x="1" y="16" width="50" height="8" fill="currentColor" opacity=".15" rx="1"/>
+              </svg>
+              <span>Flat</span>
+            </button>
+            <!-- Subtle -->
+            <button class="shape-btn" data-shape="subtle">
+              <svg viewBox="0 0 52 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="1,5 51,4 51,12 1,13" fill="currentColor" opacity=".25"/>
+                <polygon points="1,16 51,15 51,24 1,25" fill="currentColor" opacity=".15"/>
+              </svg>
+              <span>Subtle</span>
+            </button>
+            <!-- Mosaic (current default) -->
+            <button class="shape-btn" data-shape="mosaic">
+              <svg viewBox="0 0 52 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="1,7 51,4 51,11 1,14" fill="currentColor" opacity=".25"/>
+                <polygon points="1,15 51,13 51,25 1,27" fill="currentColor" opacity=".15"/>
+              </svg>
+              <span>Mosaic</span>
+            </button>
+            <!-- Bold -->
+            <button class="shape-btn" data-shape="bold">
+              <svg viewBox="0 0 52 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="1,9 51,3 51,10 1,16" fill="currentColor" opacity=".25"/>
+                <polygon points="1,16 51,13 51,27 1,27" fill="currentColor" opacity=".15"/>
+              </svg>
+              <span>Bold</span>
+            </button>
+          </div>
+        </div>
+
+        </div>
+      </aside><!-- /sidebar -->
+    </div><!-- /editor-body -->
+
+  </div><!-- /editor-wrap -->
+
+  <!-- ── Color picker popover — outside editor-wrap to avoid overflow clipping -->
+  <div id="cpWrap">
+    <canvas id="cpCanvas" width="220" height="220"></canvas>
+    <div class="cp-bottom">
+      <div class="cp-preview" id="cpPreview"></div>
+      <input class="cp-hex" id="cpHex" type="text" maxlength="7" placeholder="#000000" spellcheck="false" />
+      <button class="cp-apply" id="cpApply">Apply</button>
+    </div>
+  </div>
+)}
+
+{isAuth && (
+<script>
+// ── Color conversions ──────────────────────────────────────────────────────
+function hexToHsv(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max === r)      h = ((g - b) / d % 6) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else                h = ((r - g) / d + 4) / 6;
+  }
+  return { h: h * 360, s: max ? d / max * 100 : 0, v: max * 100 };
+}
+
+function hsvToHex(h, s, v) {
+  s /= 100; v /= 100;
+  const i = Math.floor(h / 60) % 6;
+  const f = h / 60 - Math.floor(h / 60);
+  const p = v*(1-s), q = v*(1-f*s), t = v*(1-(1-f)*s);
+  const rgb = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i];
+  return '#' + rgb.map(x => Math.round(x*255).toString(16).padStart(2,'0')).join('');
+}
+
+// ── Color Picker (canvas-based wheel) ─────────────────────────────────────
+const ColorPicker = (() => {
+  let pH = 0, pS = 100, pV = 100;  // current HSV
+  let activeToken = null;
+  let onChangeCb  = null;
+  let dragging    = null; // 'hue' | 'sv'
+
+  // Canvas dimensions
+  const SZ = 220, CX = 110, CY = 110;
+  const R_OUT = 106, R_IN = 76;
+  const SV_HALF = Math.floor(R_IN * 0.707) - 2;  // half-side of inscribed square
+  const SV_X = CX - SV_HALF, SV_Y = CY - SV_HALF, SV_SZ = SV_HALF * 2;
+
+  // ── DOM — reference elements already in the template ─────────────────────
+  const wrap    = document.getElementById('cpWrap');
+  const canvas  = document.getElementById('cpCanvas');
+  const preview = document.getElementById('cpPreview');
+  const hexIn   = document.getElementById('cpHex');
+  const applyBtn= document.getElementById('cpApply');
+  canvas.style.touchAction = 'none';
+
+  const ctx = canvas.getContext('2d');
+
+  // ── Drawing ───────────────────────────────────────────────────────────────
+  function draw() {
+    ctx.clearRect(0, 0, SZ, SZ);
+
+    // Hue ring using conic gradient clipped to outer circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, R_OUT, 0, Math.PI * 2);
+    ctx.clip();
+    const conic = ctx.createConicGradient(-Math.PI / 2, CX, CY);
+    for (let i = 0; i <= 12; i++) conic.addColorStop(i/12, `hsl(${i*30},100%,50%)`);
+    ctx.fillStyle = conic;
+    ctx.fillRect(0, 0, SZ, SZ);
+    ctx.restore();
+
+    // Cut inner circle to reveal SV area
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(CX, CY, R_IN, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // SV square: white→hue (left→right) overlaid with transparent→black (top→bottom)
+    const hGrad = ctx.createLinearGradient(SV_X, 0, SV_X + SV_SZ, 0);
+    hGrad.addColorStop(0, '#fff');
+    hGrad.addColorStop(1, `hsl(${pH},100%,50%)`);
+    ctx.fillStyle = hGrad;
+    ctx.fillRect(SV_X, SV_Y, SV_SZ, SV_SZ);
+
+    const vGrad = ctx.createLinearGradient(0, SV_Y, 0, SV_Y + SV_SZ);
+    vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vGrad.addColorStop(1, '#000');
+    ctx.fillStyle = vGrad;
+    ctx.fillRect(SV_X, SV_Y, SV_SZ, SV_SZ);
+
+    // Hue handle on ring
+    const hAngle = (pH - 90) * Math.PI / 180;
+    const hR = (R_OUT + R_IN) / 2;
+    const hx = CX + hR * Math.cos(hAngle), hy = CY + hR * Math.sin(hAngle);
+    ctx.beginPath(); ctx.arc(hx, hy, 11, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy, 7, 0, Math.PI*2);
+    ctx.fillStyle = `hsl(${pH},100%,50%)`; ctx.fill();
+
+    // SV handle
+    const svx = SV_X + (pS / 100) * SV_SZ;
+    const svy = SV_Y + (1 - pV / 100) * SV_SZ;
+    const dark = pV < 55 || (pS > 70 && pV < 75);
+    ctx.beginPath(); ctx.arc(svx, svy, 9, 0, Math.PI*2);
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.6)';
+    ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(svx, svy, 5.5, 0, Math.PI*2);
+    ctx.fillStyle = hsvToHex(pH, pS, pV); ctx.fill();
+  }
+
+  function syncUI() {
+    const hex = hsvToHex(pH, pS, pV);
+    preview.style.background = hex;
+    hexIn.value = hex;
+  }
+
+  // ── Pointer handling ──────────────────────────────────────────────────────
+  function hitZone(px, py) {
+    const dx = px-CX, dy = py-CY, d = Math.hypot(dx, dy);
+    if (d >= R_IN && d <= R_OUT) return 'hue';
+    if (px >= SV_X && px <= SV_X+SV_SZ && py >= SV_Y && py <= SV_Y+SV_SZ) return 'sv';
+    return null;
+  }
+
+  function applyPointer(px, py) {
+    if (dragging === 'hue') {
+      pH = (Math.atan2(py-CY, px-CX) * 180/Math.PI + 90 + 360) % 360;
+    } else {
+      pS = Math.max(0, Math.min(100, (px - SV_X) / SV_SZ * 100));
+      pV = Math.max(0, Math.min(100, (1 - (py - SV_Y) / SV_SZ) * 100));
+    }
+    draw(); syncUI();
+    if (onChangeCb) onChangeCb(hsvToHex(pH, pS, pV));
+  }
+
+  function canvasXY(e) {
+    const r = canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * SZ / r.width, (e.clientY - r.top) * SZ / r.height];
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    const [px, py] = canvasXY(e);
+    dragging = hitZone(px, py);
+    if (dragging) { canvas.setPointerCapture(e.pointerId); applyPointer(px, py); }
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    applyPointer(...canvasXY(e));
+  });
+  canvas.addEventListener('pointerup', () => { dragging = null; });
+
+  // Hex input → update wheel
+  hexIn.addEventListener('input', () => {
+    const v = hexIn.value.startsWith('#') ? hexIn.value : '#' + hexIn.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      const hsv = hexToHsv(v);
+      pH = hsv.h; pS = hsv.s; pV = hsv.v;
+      draw(); preview.style.background = v;
+      if (onChangeCb) onChangeCb(v);
+    }
+  });
+
+  // Apply closes picker
+  applyBtn.addEventListener('click', () => close());
+
+  // Click outside closes
+  document.addEventListener('pointerdown', e => {
+    if (wrap.style.display !== 'none' && !wrap.contains(e.target)) close();
+  }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  // ── Public API ────────────────────────────────────────────────────────────
+  function open(token, hex, anchorEl, onChange) {
+    activeToken = token;
+    onChangeCb  = onChange;
+    const hsv = hexToHsv(hex.length === 7 ? hex : '#808080');
+    pH = hsv.h; pS = hsv.s; pV = hsv.v;
+    draw(); syncUI();
+
+    // Mark swatch as open
+    document.querySelectorAll('.color-swatch.cp-open').forEach(s => s.classList.remove('cp-open'));
+    anchorEl.classList.add('cp-open');
+
+    // Position: prefer left of swatch (sidebar is on right edge), else right
+    const r = anchorEl.getBoundingClientRect();
+    const W = 252, H = 310;
+    let left = r.left - W - 10;
+    if (left < 8) left = r.right + 10;
+    let top = r.top - 8;
+    if (top + H > window.innerHeight - 8) top = window.innerHeight - H - 8;
+    wrap.style.left = left + 'px';
+    wrap.style.top  = Math.max(8, top) + 'px';
+    wrap.style.display = 'block';
+  }
+
+  function close() {
+    wrap.style.display = 'none';
+    document.querySelectorAll('.color-swatch.cp-open').forEach(s => s.classList.remove('cp-open'));
+    activeToken = null;
+  }
+
+  return { open, close };
+})();
+
+// ── Shape presets ──────────────────────────────────────────────────────────
+const SHAPE_PRESETS = {
+  flat: {
+    '--shape-1-tl':'0px','--shape-1-br':'0px',
+    '--shape-2-tr':'0px','--shape-2-bl':'0px',
+    '--shape-3-tl':'0px','--shape-3-tr':'0px','--shape-3-br':'0px','--shape-3-bl':'0px',
+  },
+  subtle: {
+    '--shape-1-tl':'1vw', '--shape-1-br':'1.5vw',
+    '--shape-2-tr':'2vw', '--shape-2-bl':'1vw',
+    '--shape-3-tl':'1.5vw','--shape-3-tr':'0.5vw','--shape-3-br':'2vw','--shape-3-bl':'0.5vw',
+  },
+  mosaic: {
+    '--shape-1-tl':'2vw', '--shape-1-br':'3vw',
+    '--shape-2-tr':'4vw', '--shape-2-bl':'2vw',
+    '--shape-3-tl':'3vw', '--shape-3-tr':'1vw', '--shape-3-br':'4vw','--shape-3-bl':'1vw',
+  },
+  bold: {
+    '--shape-1-tl':'4vw', '--shape-1-br':'5vw',
+    '--shape-2-tr':'6vw', '--shape-2-bl':'4vw',
+    '--shape-3-tl':'5vw', '--shape-3-tr':'2vw', '--shape-3-br':'6vw','--shape-3-bl':'2vw',
+  },
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  colors:   {},
+  fonts:    { heading: '', body: '' },
+  shapes:   { style: 'mosaic', vars: { ...SHAPE_PRESETS.mosaic } },
+  original: {},
+  dirty:    false,
+};
+
+const iframe = document.getElementById('previewFrame');
+const sidebar = document.getElementById('sidebar');
+
+// ── Seed state from rendered swatches ─────────────────────────────────────
+document.querySelectorAll('.color-row[data-token]').forEach(row => {
+  const token = row.dataset.token;
+  const hex   = row.querySelector('.color-hex').value;
+  state.colors[token] = hex;
+});
+state.original.colors = { ...state.colors };
+state.fonts.heading = document.getElementById('selectHeading').value;
+state.fonts.body    = document.getElementById('selectBody').value;
+state.original.fonts  = { ...state.fonts };
+state.original.shapes = { style: state.shapes.style, vars: { ...state.shapes.vars } };
+
+// Mark the current shape preset button as active
+document.querySelector(`.shape-btn[data-shape="${state.shapes.style}"]`)?.classList.add('active');
+
+// ── Iframe loading ─────────────────────────────────────────────────────────
+iframe.addEventListener('load', () => {
+  document.getElementById('previewLoading').classList.add('done');
+});
+
+// ── Page navigation ────────────────────────────────────────────────────────
+document.getElementById('pageNav').addEventListener('click', e => {
+  const tab = e.target.closest('.page-tab');
+  if (!tab) return;
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  const url = tab.dataset.href + '?__editor=1';
+  document.getElementById('previewLoading').classList.remove('done');
+  iframe.src = url;
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function markDirty() {
+  if (!state.dirty) {
+    state.dirty = true;
+    document.getElementById('unsavedBadge').classList.add('visible');
+  }
+}
+
+function sendToIframe(msg) {
+  try { iframe.contentWindow.postMessage(msg, '*'); } catch {}
+}
+
+function applyColorToUI(token, hex) {
+  document.querySelectorAll(`.color-row[data-token="${token}"]`).forEach(row => {
+    row.querySelector('.color-swatch').style.background = hex;
+    row.querySelector('.color-hex').value = hex;
+  });
+}
+
+function isValidHex(val) {
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val);
+}
+
+function hexToFull(hex) {
+  if (hex.length === 4) {
+    return '#' + hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3];
+  }
+  return hex;
+}
+
+// ── Color swatch click → open color wheel ─────────────────────────────────
+sidebar.addEventListener('click', e => {
+  const swatch = e.target.closest('.color-swatch[data-token]');
+  if (!swatch) return;
+  const token = swatch.dataset.token;
+  ColorPicker.open(token, state.colors[token] || '#000000', swatch, hex => {
+    state.colors[token] = hex;
+    applyColorToUI(token, hex);
+    sendToIframe({ type: 'UPDATE_TOKEN', token, value: hex });
+    markDirty();
+  });
+});
+
+// ── Hex text input ─────────────────────────────────────────────────────────
+sidebar.addEventListener('input', e => {
+  const input = e.target;
+  if (input.classList.contains('color-hex') && input.dataset.token) {
+    const raw   = input.value.startsWith('#') ? input.value : '#' + input.value;
+    const token = input.dataset.token;
+    if (isValidHex(raw)) {
+      const full = hexToFull(raw);
+      state.colors[token] = full;
+      applyColorToUI(token, full);
+      sendToIframe({ type: 'UPDATE_TOKEN', token, value: full });
+      markDirty();
+    }
+  }
+});
+
+// ── Font selects ───────────────────────────────────────────────────────────
+function onFontChange(role, family) {
+  state.fonts[role] = family;
+  const fallback = role === 'heading' ? 'Georgia, serif' : '-apple-system, sans-serif';
+  const previewEl = document.getElementById(role === 'heading' ? 'previewHeading' : 'previewBody');
+  previewEl.style.fontFamily = `'${family}', ${fallback}`;
+
+  // Load font in the editor panel itself
+  const linkId = `editor-local-font-${role}`;
+  let link = document.getElementById(linkId);
+  if (!link) {
+    link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }
+  const param = family.replace(/ /g, '+');
+  const weights = role === 'heading' ? 'ital,wght@0,400;1,400' : 'wght@300;400;500;600';
+  link.href = `https://fonts.googleapis.com/css2?family=${param}:${weights}&display=swap`;
+
+  sendToIframe({ type: 'UPDATE_FONT', role, family });
+  markDirty();
+}
+
+document.getElementById('selectHeading').addEventListener('change', e => {
+  onFontChange('heading', e.target.value);
+});
+document.getElementById('selectBody').addEventListener('change', e => {
+  onFontChange('body', e.target.value);
+});
+
+// ── Shape presets ──────────────────────────────────────────────────────────
+document.getElementById('shapeGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.shape-btn');
+  if (!btn) return;
+  const preset = btn.dataset.shape;
+  const vars = SHAPE_PRESETS[preset];
+  if (!vars) return;
+
+  document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  state.shapes.style = preset;
+  state.shapes.vars  = { ...vars };
+
+  // Push every shape var to the iframe
+  Object.entries(vars).forEach(([token, value]) => {
+    sendToIframe({ type: 'UPDATE_TOKEN', token, value });
+  });
+  markDirty();
+});
+
+// ── Receive postMessage from iframe (element clicked) ─────────────────────
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'EDITOR_CLICK') return;
+  const { tokens } = e.data;
+
+  // Clear previous highlights
+  document.querySelectorAll('.color-row.highlighted').forEach(r => r.classList.remove('highlighted'));
+
+  if (!tokens || tokens.length === 0) return;
+
+  const notice = document.getElementById('clickNotice');
+  const noticeText = document.getElementById('clickNoticeText');
+  notice.classList.add('visible');
+  noticeText.textContent = `${tokens.length} token${tokens.length > 1 ? 's' : ''} found — highlighted below`;
+
+  tokens.forEach(({ token }) => {
+    const rows = document.querySelectorAll(`.color-row[data-token="${token}"]`);
+    rows.forEach(row => {
+      row.classList.add('highlighted');
+      row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  setTimeout(() => notice.classList.remove('visible'), 3500);
+});
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (!confirm('Reset all changes to the last published values?')) return;
+
+  // Restore colors
+  Object.entries(state.original.colors).forEach(([token, val]) => {
+    state.colors[token] = val;
+    applyColorToUI(token, val);
+    sendToIframe({ type: 'UPDATE_TOKEN', token, value: val });
+  });
+
+  // Restore fonts
+  ['heading', 'body'].forEach(role => {
+    const family = state.original.fonts[role];
+    state.fonts[role] = family;
+    const selectEl = document.getElementById(role === 'heading' ? 'selectHeading' : 'selectBody');
+    selectEl.value = family;
+    onFontChange(role, family);
+  });
+
+  // Restore shapes
+  const origShape = state.original.shapes;
+  state.shapes = { style: origShape.style, vars: { ...origShape.vars } };
+  document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.shape-btn[data-shape="${origShape.style}"]`)?.classList.add('active');
+  Object.entries(origShape.vars).forEach(([token, value]) => {
+    sendToIframe({ type: 'UPDATE_TOKEN', token, value });
+  });
+
+  state.dirty = false;
+  document.getElementById('unsavedBadge').classList.remove('visible');
+});
+
+// ── Publish ────────────────────────────────────────────────────────────────
+document.getElementById('btnPublish').addEventListener('click', async () => {
+  const btn    = document.getElementById('btnPublish');
+  const status = document.getElementById('publishStatus');
+
+  btn.disabled = true;
+  status.className = 'publish-status publishing';
+  status.innerHTML = '<div class="spinner"></div> Publishing… Vercel will rebuild in ~30 seconds.';
+
+  try {
+    const res = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ colors: state.colors, fonts: state.fonts, shapes: state.shapes }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Publish failed');
+    }
+
+    status.className = 'publish-status success';
+    status.innerHTML = '✓ Published! Your site will update in ~30–60 seconds.';
+    state.dirty = false;
+    state.original.colors  = { ...state.colors };
+    state.original.fonts   = { ...state.fonts };
+    state.original.shapes  = { style: state.shapes.style, vars: { ...state.shapes.vars } };
+    document.getElementById('unsavedBadge').classList.remove('visible');
+
+    setTimeout(() => { status.style.display = 'none'; }, 6000);
+  } catch (err) {
+    status.className = 'publish-status error';
+    status.innerHTML = '✗ ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+)}
+
+</body>
+</html>
