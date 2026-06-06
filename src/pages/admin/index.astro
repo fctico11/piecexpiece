@@ -305,7 +305,10 @@ const colorValues: Record<string, string> = tokens.colors;
 
     <!-- Top bar -->
     <div class="topbar">
-      <span class="topbar__brand">✦ Piece x Piece — Theme Editor</span>
+      <span class="topbar__brand">✦ Piece x Piece</span>
+      <div style="width:1px;height:24px;background:#2d3548;margin:0 4px;flex-shrink:0;"></div>
+      <a href="/admin" style="display:flex;align-items:center;height:52px;padding:0 16px;font-size:0.82rem;font-weight:600;color:#1a3a5c;border-bottom:2px solid #1a3a5c;text-decoration:none;white-space:nowrap;">Theme Editor</a>
+      <a href="/admin/classes" style="display:flex;align-items:center;height:52px;padding:0 16px;font-size:0.82rem;font-weight:600;color:#475569;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap;transition:color .2s;">Classes</a>
       <span class="topbar__hint" id="topHint">Click any element in the preview to edit its color</span>
       <div class="topbar__actions">
         <span class="badge-unsaved" id="unsavedBadge">Unsaved changes</span>

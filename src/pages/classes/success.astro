@@ -1,0 +1,20 @@
+---
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+const className = Astro.url.searchParams.get('class') ?? 'your class';
+---
+<Base title="You're Registered! — Piece x Piece" description="Your spot is confirmed.">
+  <section class="section mosaic-section mosaic-section--light" style="padding-top: 140px; min-height: 70vh; display:flex; align-items:center;">
+    <div class="container text-center fade-in">
+      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--color-turquoise-vibrant),var(--color-emerald));display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h1 style="margin-bottom:16px;">You're in!</h1>
+      <p style="font-size:1.1rem;color:var(--color-text-light);margin:0 auto 32px;">
+        Your spot for <strong style="color:var(--color-primary)">{className}</strong> is confirmed.<br>
+        Check your email for a receipt and all the details.
+      </p>
+      <a href="/classes" class="btn btn--primary">Browse More Classes</a>
+    </div>
+  </section>
+</Base>

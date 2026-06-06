@@ -1,0 +1,886 @@
+---
+export const prerender = false;
+import { createHash } from 'crypto';
+import classData from '../../data/classes.json';
+
+// ── Auth ────────────────────────────────────────────────────────────────────
+const password = import.meta.env.ADMIN_PASSWORD ?? '';
+const expectedCookie = password
+  ? createHash('sha256').update(password + ':pxp-editor').digest('hex')
+  : null;
+const cookie = Astro.request.headers.get('cookie') ?? '';
+const match  = cookie.match(/(?:^|;\s*)pxp_auth=([^;]+)/);
+const isAuth = expectedCookie && match?.[1] === expectedCookie;
+if (!isAuth) return Astro.redirect('/admin');
+
+const allClasses  = (classData.classes as any[]).sort(
+  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+);
+const featured = allClasses.filter(c => c.featured);
+const featuredCount = featured.length;
+
+function fmtDate(d: string) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Classes — Piece x Piece Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Palette: warm beige + navy + soft turquoise ──────────────────────
+       --bg:        #f5f0ea  warm parchment
+       --surface:   #ffffff  card faces
+       --surface-2: #f0ebe3  slightly deeper beige for inset areas
+       --border:    rgba(26,58,92,0.1)  soft navy edge
+       --navy:      #1a3a5c  primary text + UI
+       --navy-lt:   #2a5a8c  hover state
+       --muted:     #7a8fa6  secondary text
+       --teal:      #3da89e  accent / primary action
+       --teal-lt:   #5fb8b0  hover teal
+       --amber:     #c97d2e  featured star
+       --coral:     #c85a46  danger / delete
+    ──────────────────────────────────────────────────────────────────────── */
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f5f0ea;
+      color: #1a3a5c;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ── Topbar ──────────────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100; height: 52px;
+      background: #fff;
+      border-bottom: 1px solid rgba(26,58,92,0.12);
+      display: flex; align-items: center; padding: 0 16px;
+      box-shadow: 0 1px 8px rgba(26,58,92,0.06);
+    }
+    .topbar__brand {
+      font-size: 0.88rem; font-weight: 700;
+      color: #1a3a5c; white-space: nowrap; letter-spacing: 0.03em;
+    }
+    .topbar__sep { width: 1px; height: 22px; background: rgba(26,58,92,0.15); margin: 0 10px; }
+    .topbar__nav { display: flex; height: 100%; }
+    .topbar__nav a {
+      display: flex; align-items: center; height: 100%; padding: 0 16px;
+      font-size: 0.82rem; font-weight: 600; color: #7a8fa6; text-decoration: none;
+      border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+    }
+    .topbar__nav a:hover { color: #1a3a5c; }
+    .topbar__nav a.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
+
+    /* ── Page ────────────────────────────────────────────────────────────── */
+    .page { max-width: 880px; margin: 0 auto; padding: 36px 24px 100px; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 18px; background: #1a3a5c; color: #fff; border: none;
+      border-radius: 8px; font: 600 0.85rem 'Inter',sans-serif; cursor: pointer;
+      transition: background .2s; white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(26,58,92,0.2);
+    }
+    .btn-primary:hover { background: #2a5a8c; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18); border-radius: 6px;
+      font: 500 0.78rem 'Inter',sans-serif; cursor: pointer; color: #7a8fa6;
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn-ghost:hover { border-color: #1a3a5c; color: #1a3a5c; background: #f5f0ea; }
+    .btn-ghost.danger:hover { border-color: #c85a46; color: #c85a46; background: rgba(200,90,70,.05); }
+    .btn-ghost.star { color: #7a8fa6; }
+    .btn-ghost.star.active {
+      border-color: #c97d2e; color: #c97d2e;
+      background: rgba(201,125,46,.08);
+      font-weight: 600;
+    }
+    .btn-ghost.star:hover { border-color: #c97d2e; color: #c97d2e; background: rgba(201,125,46,.06); }
+
+    .btn-cancel {
+      padding: 10px 20px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18); border-radius: 8px;
+      font: 500 0.85rem 'Inter',sans-serif; cursor: pointer; color: #7a8fa6;
+      transition: all .15s;
+    }
+    .btn-cancel:hover { border-color: #1a3a5c; color: #1a3a5c; }
+
+    .btn-publish {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; background: #3da89e; color: #fff; border: none;
+      border-radius: 8px; font: 600 0.85rem 'Inter',sans-serif; cursor: pointer;
+      transition: background .2s, opacity .2s;
+      box-shadow: 0 2px 8px rgba(61,168,158,0.3);
+    }
+    .btn-publish:hover:not(:disabled) { background: #5fb8b0; }
+    .btn-publish:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Section headers ─────────────────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; gap: 12px;
+    }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #7a8fa6;
+    }
+    .section-badge {
+      font-size: 0.7rem; font-weight: 600; padding: 2px 9px;
+      border-radius: 20px; background: rgba(61,168,158,.1); color: #3da89e;
+      border: 1px solid rgba(61,168,158,.25);
+    }
+    .section-badge.full {
+      background: rgba(201,125,46,.1); color: #c97d2e;
+      border-color: rgba(201,125,46,.3);
+    }
+
+    /* ── Featured grid ───────────────────────────────────────────────────── */
+    .featured-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px; margin-bottom: 40px;
+    }
+    .featured-slot {
+      background: #fff;
+      border: 1px solid rgba(26,58,92,0.12);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(26,58,92,0.06);
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .featured-slot:hover {
+      border-color: rgba(26,58,92,0.22);
+      box-shadow: 0 4px 20px rgba(26,58,92,0.1);
+    }
+    .featured-slot__img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+    .featured-slot__img-ph {
+      width: 100%; aspect-ratio: 4/3; background: #f0ebe3;
+      display: flex; align-items: center; justify-content: center; color: #c8bfb4;
+    }
+    .featured-slot__body { padding: 11px 13px 13px; }
+    .featured-slot__title {
+      font-weight: 600; font-size: 0.82rem; color: #1a3a5c;
+      margin-bottom: 3px; line-height: 1.35;
+    }
+    .featured-slot__meta { font-size: 0.72rem; color: #7a8fa6; margin-bottom: 10px; }
+    .featured-slot__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .empty-slot {
+      background: rgba(240,235,227,0.5);
+      border: 1.5px dashed rgba(26,58,92,0.15);
+      border-radius: 12px; aspect-ratio: 3/2;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      color: #b8c6d4; font-size: 0.75rem; padding: 16px; text-align: center;
+      line-height: 1.4;
+    }
+
+    /* ── All classes list ────────────────────────────────────────────────── */
+    .class-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
+    .class-row {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border: 1px solid rgba(26,58,92,0.1);
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 1px 6px rgba(26,58,92,0.05);
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .class-row:hover {
+      border-color: rgba(26,58,92,0.2);
+      box-shadow: 0 3px 16px rgba(26,58,92,0.09);
+    }
+    .class-row__img {
+      width: 68px; height: 68px; border-radius: 8px; object-fit: cover;
+      flex-shrink: 0; background: #f0ebe3;
+    }
+    .class-row__img-ph {
+      width: 68px; height: 68px; border-radius: 8px; background: #f0ebe3;
+      display: flex; align-items: center; justify-content: center;
+      color: #c8bfb4; flex-shrink: 0;
+    }
+    .class-row__body { flex: 1; min-width: 0; }
+    .class-row__title {
+      font-weight: 600; font-size: 0.9rem; color: #1a3a5c;
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .class-row__meta { font-size: 0.75rem; color: #7a8fa6; display: flex; flex-wrap: wrap; gap: 10px; }
+    .class-row__actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+
+    .pill {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    .pill--amber { background: rgba(201,125,46,.1);  color: #c97d2e; border: 1px solid rgba(201,125,46,.25); }
+    .pill--red   { background: rgba(200,90,70,.09);  color: #c85a46; border: 1px solid rgba(200,90,70,.2); }
+    .pill--teal  { background: rgba(61,168,158,.09); color: #3da89e; border: 1px solid rgba(61,168,158,.25); }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 64px 24px;
+      background: rgba(240,235,227,0.5);
+      border: 1.5px dashed rgba(26,58,92,0.15);
+      border-radius: 14px; margin-bottom: 36px;
+    }
+    .empty-state p { color: #7a8fa6; margin-bottom: 20px; font-size: 0.88rem; line-height: 1.7; }
+
+    /* ── List topbar ─────────────────────────────────────────────────────── */
+    .list-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .list-topbar h1 { font-size: 1.35rem; font-weight: 700; color: #1a3a5c; }
+    .list-topbar p  { font-size: 0.78rem; color: #7a8fa6; margin-top: 3px; }
+
+    /* ── Toast ───────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #fff; border-radius: 10px;
+      padding: 12px 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(26,58,92,0.18); z-index: 9999;
+      opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; pointer-events: all; }
+    .toast.success { border: 1px solid rgba(61,168,158,.35); color: #2a7d75; }
+    .toast.error   { border: 1px solid rgba(200,90,70,.35);  color: #c85a46; }
+    .toast.loading { border: 1px solid rgba(26,58,92,.15);   color: #1a3a5c; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-sm { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+    /* ── Form panel ──────────────────────────────────────────────────────── */
+    #formPanel { display: none; }
+
+    .form-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; color: #7a8fa6; cursor: pointer;
+      background: none; border: none; margin-bottom: 24px; padding: 0;
+      transition: color .15s;
+    }
+    .form-back:hover { color: #1a3a5c; }
+
+    .form-title { font-size: 1.2rem; font-weight: 700; color: #1a3a5c; margin-bottom: 28px; }
+    .form-section { margin-bottom: 28px; }
+    .form-section-label {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #7a8fa6; margin-bottom: 14px;
+    }
+    .form-divider { height: 1px; background: rgba(26,58,92,0.08); margin: 28px 0; }
+
+    /* Image upload */
+    .img-drop {
+      border: 2px dashed rgba(26,58,92,0.18); border-radius: 12px; padding: 40px 24px;
+      text-align: center; cursor: pointer; background: rgba(240,235,227,0.4);
+      transition: border-color .2s, background .2s; position: relative;
+    }
+    .img-drop:hover, .img-drop.drag-over {
+      border-color: #3da89e; background: rgba(61,168,158,.05);
+    }
+    .img-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .img-drop__icon { color: rgba(26,58,92,0.25); margin-bottom: 12px; }
+    .img-drop__label { font-size: 0.88rem; color: #7a8fa6; }
+    .img-drop__label strong { color: #3da89e; }
+    .img-drop__hint { font-size: 0.72rem; color: #b0bec8; margin-top: 4px; }
+
+    .img-preview-wrap img {
+      width: 100%; max-height: 240px; object-fit: cover;
+      border-radius: 12px; display: block;
+      border: 1px solid rgba(26,58,92,0.1);
+    }
+    .img-preview-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-img-action {
+      flex: 1; padding: 9px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.15);
+      border-radius: 8px; color: #7a8fa6; font: 500 0.82rem 'Inter',sans-serif;
+      cursor: pointer; text-align: center; transition: all .15s; position: relative;
+    }
+    .btn-img-action input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .btn-img-action:hover { border-color: #3da89e; color: #3da89e; background: rgba(61,168,158,.04); }
+    .btn-img-action.remove:hover { border-color: #c85a46; color: #c85a46; background: rgba(200,90,70,.04); }
+
+    /* Form fields */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      font-size: 0.73rem; font-weight: 600; color: #7a8fa6;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .field label .opt { color: #b0bec8; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .field input, .field textarea, .field select {
+      padding: 10px 12px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18);
+      border-radius: 8px; color: #1a3a5c; font: 0.9rem 'Inter',sans-serif;
+      outline: none; transition: border-color .2s, box-shadow .2s; width: 100%;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: #b0bec8; }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: #3da89e;
+      box-shadow: 0 0 0 3px rgba(61,168,158,0.12);
+    }
+    .field textarea { resize: vertical; min-height: 96px; line-height: 1.65; }
+    .field select {
+      appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8fa6' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+    }
+    .input-pfx { position: relative; }
+    .input-pfx span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #b0bec8; pointer-events: none; }
+    .input-pfx input { padding-left: 22px; }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px;
+      background: rgba(240,235,227,0.5); border-radius: 10px;
+      border: 1px solid rgba(26,58,92,0.08);
+    }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; margin-top: 1px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle__track {
+      position: absolute; inset: 0; background: #d8d0c8;
+      border-radius: 22px; cursor: pointer; transition: background .2s;
+    }
+    .toggle__track::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+      transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .toggle input:checked + .toggle__track { background: #3da89e; }
+    .toggle input:checked + .toggle__track::before { transform: translateX(18px); }
+    .toggle-info .toggle-label { font-size: 0.9rem; color: #1a3a5c; font-weight: 600; }
+    .toggle-info .toggle-sub  { font-size: 0.75rem; color: #7a8fa6; margin-top: 3px; }
+
+    /* Status */
+    .form-status { display: none; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px; font-size: 0.83rem; margin-top: 16px; }
+    .form-status.loading { display: flex; background: rgba(26,58,92,.05);  border: 1px solid rgba(26,58,92,.15);  color: #1a3a5c; }
+    .form-status.success { display: flex; background: rgba(61,168,158,.08); border: 1px solid rgba(61,168,158,.25); color: #2a7d75; }
+    .form-status.error   { display: flex; background: rgba(200,90,70,.07);  border: 1px solid rgba(200,90,70,.25);  color: #c85a46; }
+    .spinner-md { width: 16px; height: 16px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+    .form-actions {
+      display: flex; gap: 12px; justify-content: flex-end;
+      padding-top: 20px; border-top: 1px solid rgba(26,58,92,0.08); margin-top: 4px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .class-row__actions { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .featured-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar__brand">✦ Piece x Piece</span>
+  <div class="topbar__sep"></div>
+  <nav class="topbar__nav">
+    <a href="/admin">Theme Editor</a>
+    <a href="/admin/classes" class="active">Classes</a>
+  </nav>
+</div>
+
+<!-- ── LIST PANEL ──────────────────────────────────────────────────────── -->
+<div class="page" id="listPanel">
+
+  <div class="list-topbar">
+    <div>
+      <h1>Classes & Events</h1>
+      <p>Changes go live ~30–60 seconds after publishing</p>
+    </div>
+    <button class="btn-primary" id="btnNew">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Class
+    </button>
+  </div>
+
+  <!-- Featured section -->
+  <div class="section-header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="section-title">Featured on Homepage</span>
+      <span class:list={['section-badge', featuredCount >= 4 && 'full']}>{featuredCount} / 4 slots</span>
+    </div>
+    <span style="font-size:0.72rem;color:#3d4a63;">★ = showing on homepage</span>
+  </div>
+
+  <div class="featured-grid">
+    {featured.map(cls => {
+      const rem = cls.totalTickets - (cls.ticketsSold || 0);
+      return (
+        <div class="featured-slot">
+          {cls.image
+            ? <img class="featured-slot__img" src={cls.image} alt={cls.title} />
+            : <div class="featured-slot__img-ph"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          }
+          <div class="featured-slot__body">
+            <div class="featured-slot__title">{cls.title}</div>
+            <div class="featured-slot__meta">{fmtDate(cls.date)} · ${cls.price}</div>
+            <div class="featured-slot__actions">
+              <button class="btn-ghost" data-edit={JSON.stringify(cls)}>Edit</button>
+              <button class="btn-ghost star active" data-toggle-id={cls.id} data-toggle-featured="true" title="Remove from homepage">★ Featured</button>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+    {Array.from({ length: Math.max(0, 4 - featuredCount) }).map((_, i) => (
+      <div class="empty-slot">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Empty slot — star a class below to fill it
+      </div>
+    ))}
+  </div>
+
+  <!-- All classes -->
+  <div class="section-header" style="margin-top:8px;">
+    <span class="section-title">All Classes ({allClasses.length})</span>
+  </div>
+
+  {allClasses.length === 0 ? (
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2d3548" stroke-width="1.5" style="margin:0 auto 16px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No classes yet.<br>Create your first one and it'll appear here and on the website.</p>
+      <button class="btn-primary" id="btnNewEmpty">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create First Class
+      </button>
+    </div>
+  ) : (
+    <div class="class-list" id="classList">
+      {allClasses.map(cls => {
+        const sold = cls.ticketsSold || 0;
+        const rem  = cls.totalTickets - sold;
+        return (
+          <div class="class-row" data-id={cls.id}>
+            {cls.image
+              ? <img class="class-row__img" src={cls.image} alt={cls.title} />
+              : <div class="class-row__img-ph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            }
+            <div class="class-row__body">
+              <div class="class-row__title">{cls.title}</div>
+              <div class="class-row__meta">
+                <span>{fmtDate(cls.date)} · {cls.time}</span>
+                <span>${cls.price} / person</span>
+                <span>{rem} of {cls.totalTickets} spots left</span>
+                {rem === 0 && <span class="pill pill--red">Sold Out</span>}
+                {rem > 0 && rem <= 5 && <span class="pill pill--teal">Limited</span>}
+              </div>
+            </div>
+            <div class="class-row__actions">
+              <button
+                class:list={['btn-ghost star', cls.featured && 'active']}
+                data-toggle-id={cls.id}
+                data-toggle-featured={cls.featured ? 'true' : 'false'}
+                title={cls.featured ? 'Remove from homepage' : 'Feature on homepage'}
+              >
+                {cls.featured ? '★' : '☆'} {cls.featured ? 'Featured' : 'Feature'}
+              </button>
+              <button class="btn-ghost" data-edit={JSON.stringify(cls)}>Edit</button>
+              <button class="btn-ghost danger" data-delete-id={cls.id} data-delete-title={cls.title}>Delete</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<!-- ── FORM PANEL ──────────────────────────────────────────────────────── -->
+<div class="page" id="formPanel">
+  <button class="form-back" id="btnBack">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Classes
+  </button>
+
+  <div class="form-title" id="formTitle">New Class</div>
+
+  <!-- Image -->
+  <div class="form-section">
+    <div class="form-section-label">Class Image</div>
+    <div class="img-upload-area">
+      <!-- Drop zone (shown when no image) -->
+      <div id="imgDrop" class="img-drop">
+        <input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp" />
+        <div class="img-drop__icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="img-drop__label"><strong>Click to upload</strong> or drag & drop</div>
+        <div class="img-drop__hint">JPG, PNG, WebP — auto-compressed for web</div>
+      </div>
+
+      <!-- Preview (shown after image is selected) -->
+      <div id="imgPreview" style="display:none;">
+        <img id="imgPreviewEl" src="" alt="Preview" style="width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;" />
+        <div class="img-preview-actions">
+          <label class="btn-img-action">
+            <input type="file" id="imgFileReplace" accept="image/jpeg,image/png,image/webp" />
+            📷 Change Image
+          </label>
+          <button class="btn-img-action remove" id="btnRemoveImg" type="button">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <!-- Details -->
+  <div class="form-section">
+    <div class="form-section-label">Class Details</div>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Class Title <span style="color:#e2725b">*</span></label>
+        <input type="text" id="fTitle" placeholder="e.g. Suncatcher Mosaic Workshop" />
+      </div>
+      <div class="field full">
+        <label>Description <span style="color:#e2725b">*</span></label>
+        <textarea id="fDesc" placeholder="What will students make? What's the vibe? Who's it for?"></textarea>
+      </div>
+      <div class="field full">
+        <label>Location <span style="color:#e2725b">*</span></label>
+        <input type="text" id="fLocation" placeholder="e.g. Studio 42, 123 Main St, Brooklyn NY" />
+      </div>
+      <div class="field">
+        <label>Date <span style="color:#e2725b">*</span></label>
+        <input type="date" id="fDate" />
+      </div>
+      <div class="field">
+        <label>Start Time <span style="color:#e2725b">*</span></label>
+        <input type="time" id="fTime" />
+      </div>
+      <div class="field">
+        <label>Duration</label>
+        <select id="fDuration">
+          <option value="1 hour">1 hour</option>
+          <option value="1.5 hours">1.5 hours</option>
+          <option value="2 hours" selected>2 hours</option>
+          <option value="2.5 hours">2.5 hours</option>
+          <option value="3 hours">3 hours</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Price (USD) <span style="color:#e2725b">*</span></label>
+        <div class="input-pfx"><span>$</span><input type="number" id="fPrice" placeholder="65" min="1" step="0.01" /></div>
+      </div>
+      <div class="field">
+        <label>Total Tickets <span style="color:#e2725b">*</span></label>
+        <input type="number" id="fTickets" placeholder="20" min="1" step="1" />
+      </div>
+      <div class="field full">
+        <label>Badge <span class="opt">(optional — e.g. "Limited Spots", "New")</span></label>
+        <input type="text" id="fBadge" placeholder="Leave blank for none" />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <!-- Visibility -->
+  <div class="form-section">
+    <div class="form-section-label">Visibility</div>
+    <div class="toggle-row">
+      <label class="toggle">
+        <input type="checkbox" id="fFeatured" />
+        <span class="toggle__track"></span>
+      </label>
+      <div class="toggle-info">
+        <div class="toggle-label">Feature on Homepage</div>
+        <div class="toggle-sub">Shows in the Featured Classes section on the homepage (max 4 at a time)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-status" id="formStatus"></div>
+
+  <div class="form-actions">
+    <button class="btn-cancel" id="btnCancelForm">Cancel</button>
+    <button class="btn-publish" id="btnPublish">
+      <span id="btnPublishLabel">Publish Class</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let editingId = null, editingStripeProductId = null, editingStripePriceId = null;
+let existingImage = null, imageBase64 = null, imageExt = null;
+
+const listPanel = document.getElementById('listPanel');
+const formPanel = document.getElementById('formPanel');
+
+// ── Panel switching ────────────────────────────────────────────────────────
+function showList() {
+  listPanel.style.display = 'block';
+  formPanel.style.display = 'none';
+  clearForm();
+}
+function showForm(title = 'New Class') {
+  listPanel.style.display = 'none';
+  formPanel.style.display = 'block';
+  document.getElementById('formTitle').textContent = title;
+  document.getElementById('formStatus').className = 'form-status';
+  window.scrollTo({ top: 0 });
+}
+
+document.getElementById('btnNew').addEventListener('click',      () => showForm('New Class'));
+document.getElementById('btnNewEmpty')?.addEventListener('click', () => showForm('New Class'));
+document.getElementById('btnBack').addEventListener('click',     showList);
+document.getElementById('btnCancelForm').addEventListener('click', showList);
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type} visible`;
+  t.innerHTML = type === 'loading'
+    ? `<div class="spinner-sm"></div> ${msg}`
+    : msg;
+  clearTimeout(toastTimer);
+  if (type !== 'loading') toastTimer = setTimeout(() => t.classList.remove('visible'), 4000);
+}
+function hideToast() {
+  clearTimeout(toastTimer);
+  document.getElementById('toast').classList.remove('visible');
+}
+
+// ── Image handling ─────────────────────────────────────────────────────────
+function compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1400;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        c.toBlob(blob => {
+          const fr = new FileReader();
+          fr.onload = ev => resolve({ base64: ev.target.result.split(',')[1], ext: 'jpg' });
+          fr.readAsDataURL(blob);
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function setImage(file) {
+  if (!file) return;
+  const result = await compressImage(file);
+  imageBase64 = result.base64; imageExt = result.ext;
+  document.getElementById('imgPreviewEl').src = `data:image/jpeg;base64,${result.base64}`;
+  document.getElementById('imgDrop').style.display = 'none';
+  document.getElementById('imgPreview').style.display = 'block';
+}
+
+function clearImage() {
+  imageBase64 = null; imageExt = null; existingImage = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgDrop').style.display = '';
+  document.getElementById('imgFile').value = '';
+  document.getElementById('imgFileReplace').value = '';
+  document.getElementById('imgPreviewEl').src = '';
+}
+
+document.getElementById('imgFile').addEventListener('change',        e => setImage(e.target.files[0]));
+document.getElementById('imgFileReplace').addEventListener('change', e => setImage(e.target.files[0]));
+document.getElementById('btnRemoveImg').addEventListener('click',    clearImage);
+
+const imgDrop = document.getElementById('imgDrop');
+imgDrop.addEventListener('dragover',  e => { e.preventDefault(); imgDrop.classList.add('drag-over'); });
+imgDrop.addEventListener('dragleave', ()  => imgDrop.classList.remove('drag-over'));
+imgDrop.addEventListener('drop',      e  => { e.preventDefault(); imgDrop.classList.remove('drag-over'); setImage(e.dataTransfer.files[0]); });
+
+// ── Clear form ─────────────────────────────────────────────────────────────
+function clearForm() {
+  editingId = null; editingStripeProductId = null; editingStripePriceId = null;
+  clearImage();
+  ['fTitle','fDesc','fLocation','fDate','fTime','fBadge','fPrice','fTickets'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('fDuration').value  = '2 hours';
+  document.getElementById('fFeatured').checked = false;
+}
+
+// ── Edit ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-edit]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const cls = JSON.parse(btn.dataset.edit);
+    editingId              = cls.id;
+    editingStripeProductId = cls.stripeProductId || null;
+    editingStripePriceId   = cls.stripePriceId   || null;
+    existingImage          = cls.image            || null;
+    imageBase64 = null; imageExt = null;
+
+    document.getElementById('fTitle').value    = cls.title        || '';
+    document.getElementById('fDesc').value     = cls.description  || '';
+    document.getElementById('fLocation').value = cls.location     || '';
+    document.getElementById('fDate').value     = cls.date         || '';
+    // Convert "2:00 PM" → "14:00" for time input
+    const raw = cls.time || '';
+    const pmMatch = raw.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (pmMatch) {
+      let h = parseInt(pmMatch[1]);
+      const m = pmMatch[2];
+      const ampm = pmMatch[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      document.getElementById('fTime').value = `${String(h).padStart(2,'0')}:${m}`;
+    } else {
+      document.getElementById('fTime').value = raw;
+    }
+    document.getElementById('fDuration').value  = cls.duration    || '2 hours';
+    document.getElementById('fPrice').value     = cls.price       || '';
+    document.getElementById('fTickets').value   = cls.totalTickets|| '';
+    document.getElementById('fBadge').value     = cls.badge       || '';
+    document.getElementById('fFeatured').checked = !!cls.featured;
+
+    if (cls.image) {
+      document.getElementById('imgPreviewEl').src = cls.image;
+      document.getElementById('imgPreview').style.display = 'block';
+      document.getElementById('imgDrop').style.display = 'none';
+    } else {
+      clearImage();
+    }
+    showForm('Edit Class');
+  });
+});
+
+// ── Feature toggle ─────────────────────────────────────────────────────────
+document.querySelectorAll('[data-toggle-id]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id        = btn.dataset.toggleId;
+    const currently = btn.dataset.toggleFeatured === 'true';
+    const newVal    = !currently;
+
+    // Check cap
+    const currentFeaturedCount = document.querySelectorAll('.class-row [data-toggle-featured="true"]').length;
+    if (newVal && currentFeaturedCount >= 4) {
+      showToast('⚠ Homepage already has 4 featured classes. Unfeature one first.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    showToast('Updating…', 'loading');
+
+    try {
+      const res = await fetch('/api/classes/feature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: id, featured: newVal }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      showToast(newVal ? '★ Added to homepage!' : 'Removed from homepage. Site updating…', 'success');
+      setTimeout(() => location.reload(), 1800);
+    } catch (err) {
+      showToast('✗ ' + err.message, 'error');
+      btn.disabled = false;
+    }
+  });
+});
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-delete-id]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id    = btn.dataset.deleteId;
+    const title = btn.dataset.deleteTitle;
+    if (!confirm(`Delete "${title}"?\n\nThis removes it from the site. Stripe payment records are preserved.`)) return;
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      const res = await fetch('/api/classes/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: id }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      showToast('Class deleted. Site updating…', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      showToast('✗ ' + err.message, 'error');
+      btn.disabled = false; btn.textContent = 'Delete';
+    }
+  });
+});
+
+// ── Publish ────────────────────────────────────────────────────────────────
+function fmtTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+document.getElementById('btnPublish').addEventListener('click', async () => {
+  const title    = document.getElementById('fTitle').value.trim();
+  const desc     = document.getElementById('fDesc').value.trim();
+  const location = document.getElementById('fLocation').value.trim();
+  const date     = document.getElementById('fDate').value;
+  const time     = document.getElementById('fTime').value;
+  const duration = document.getElementById('fDuration').value;
+  const price    = parseFloat(document.getElementById('fPrice').value);
+  const tickets  = parseInt(document.getElementById('fTickets').value);
+  const badge    = document.getElementById('fBadge').value.trim();
+  const featured = document.getElementById('fFeatured').checked;
+
+  if (!title)              return alert('Please enter a class title.');
+  if (!desc)               return alert('Please enter a description.');
+  if (!location)           return alert('Please enter a location.');
+  if (!date)               return alert('Please select a date.');
+  if (!time)               return alert('Please select a start time.');
+  if (!price || price <= 0) return alert('Please enter a valid price.');
+  if (!tickets || tickets < 1) return alert('Please enter the number of tickets.');
+  if (!imageBase64 && !existingImage) return alert('Please upload a class image.');
+
+  const btn    = document.getElementById('btnPublish');
+  const status = document.getElementById('formStatus');
+  btn.disabled = true;
+  status.className = 'form-status loading';
+  status.innerHTML = '<div class="spinner-md"></div> Publishing — creating Stripe product and uploading image…';
+
+  try {
+    const res = await fetch('/api/classes/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(editingId ? { id: editingId } : {}),
+        title, description: desc, location, date,
+        time: fmtTime(time), duration, price, totalTickets: tickets,
+        badge: badge || null, featured,
+        ...(imageBase64   ? { imageBase64, imageExt }                           : {}),
+        ...(editingStripeProductId ? { stripeProductId: editingStripeProductId } : {}),
+        ...(editingStripePriceId   ? { stripePriceId:   editingStripePriceId   } : {}),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Publish failed');
+
+    status.className = 'form-status success';
+    status.innerHTML = `✓ ${editingId ? 'Updated' : 'Published'}! Site will update in ~30–60 seconds.`;
+    setTimeout(() => location.reload(), 2500);
+  } catch (err) {
+    status.className = 'form-status error';
+    status.innerHTML = '✗ ' + err.message;
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>

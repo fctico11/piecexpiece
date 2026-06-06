@@ -1,0 +1,101 @@
+---
+const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
+---
+
+<!-- Checkout modal overlay -->
+<div id="checkoutModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:24px;">
+  <div id="checkoutBox" style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 24px 64px rgba(0,0,0,0.4);">
+    <!-- Header -->
+    <div style="padding:20px 24px 0; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:16px;">
+      <div>
+        <div style="font-weight:700; font-size:1rem; color:#1a1a1a;" id="checkoutTitle">Reserve Your Spot</div>
+        <div style="font-size:0.82rem; color:#666; margin-top:2px;" id="checkoutSubtitle"></div>
+      </div>
+      <button id="checkoutClose" style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#666;flex-shrink:0;">×</button>
+    </div>
+    <!-- Stripe Embedded Checkout renders here -->
+    <div id="checkoutContainer" style="padding:16px 24px 24px;"></div>
+    <!-- Loading state -->
+    <div id="checkoutLoading" style="padding:60px 24px; text-align:center; color:#666; font-size:0.9rem;">
+      <div style="width:32px;height:32px;border:2px solid #e0e0e0;border-top-color:#3da89e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
+      Preparing secure checkout…
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
+</div>
+
+<script define:vars={{ stripePublishableKey }}>
+const modal      = document.getElementById('checkoutModal');
+const box        = document.getElementById('checkoutBox');
+const loading    = document.getElementById('checkoutLoading');
+const container  = document.getElementById('checkoutContainer');
+const titleEl    = document.getElementById('checkoutTitle');
+const subtitleEl = document.getElementById('checkoutSubtitle');
+
+let stripeInstance    = null;
+let embeddedCheckout  = null;
+
+async function getStripe() {
+  if (stripeInstance) return stripeInstance;
+  await new Promise((res, rej) => {
+    if (window.Stripe) { res(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  stripeInstance = window.Stripe(stripePublishableKey);
+  return stripeInstance;
+}
+
+async function openCheckout(classId, classTitle, classPrice) {
+  // Show modal
+  modal.style.display = 'flex';
+  loading.style.display = '';
+  container.style.display = 'none';
+  container.innerHTML = '';
+  titleEl.textContent  = classTitle;
+  subtitleEl.textContent = classPrice + ' / person · Secure checkout';
+  document.body.style.overflow = 'hidden';
+
+  // Unmount previous checkout if any
+  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
+
+  try {
+    const stripe = await getStripe();
+
+    const res = await fetch('/api/checkout/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ classId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
+
+    embeddedCheckout = await stripe.initEmbeddedCheckout({ clientSecret: data.clientSecret });
+    loading.style.display = 'none';
+    container.style.display = '';
+    embeddedCheckout.mount('#checkoutContainer');
+  } catch (err) {
+    loading.innerHTML = `<div style="color:#e2725b">⚠ ${err.message}</div>`;
+  }
+}
+
+function closeCheckout() {
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
+  container.innerHTML = '';
+}
+
+document.getElementById('checkoutClose').addEventListener('click', closeCheckout);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeCheckout(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCheckout(); });
+
+// Listen for Get Tickets buttons anywhere on the page
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-get-tickets');
+  if (!btn) return;
+  openCheckout(btn.dataset.classId, btn.dataset.classTitle, btn.dataset.classPrice);
+});
+</script>

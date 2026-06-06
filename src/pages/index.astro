@@ -4,14 +4,24 @@ import ClassCard from '../components/ClassCard.astro';
 import CTABanner from '../components/CTABanner.astro';
 import Lightbox from '../components/Lightbox.astro';
 import InstagramFeed from '../components/InstagramFeed.astro';
-import { getActiveClasses } from '../lib/stripe';
+import CheckoutModal from '../components/CheckoutModal.astro';
+import classData from '../data/classes.json';
 
 const title = "Piece x Piece Mosaics — Pop-Up Mosaic Workshops";
 const description = "Pop-up mosaic workshops designed for all skill levels. Create beautiful mosaic art in a relaxing, hands-on experience. No experience needed.";
 
-// Fetch dynamic classes from Stripe and limit to top 3 for the homepage
-const stripeClasses = await getActiveClasses();
-const featuredClasses = stripeClasses.slice(0, 3);
+// Show up to 4 featured classes from classes.json
+const allClasses = classData.classes as any[];
+const featuredClasses = allClasses
+  .filter(c => c.featured)
+  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  .slice(0, 4);
+
+function fmtClassDate(cls: any) {
+  const d = new Date(cls.date + 'T00:00:00');
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return `${day} · ${cls.time}`;
+}
 ---
 
 <Base title={title} description={description}>
@@ -90,51 +100,26 @@ const featuredClasses = stripeClasses.slice(0, 3);
       </div>
       <div class="classes-grid">
         {featuredClasses.length > 0 ? (
-          featuredClasses.map((cls, index) => (
-            <ClassCard 
+          featuredClasses.map((cls: any, index: number) => (
+            <ClassCard
+              id={cls.id}
               title={cls.title}
               description={cls.description}
-              dateStr={cls.dateStr}
+              dateStr={fmtClassDate(cls)}
               duration={cls.duration}
               location={cls.location}
-              price={cls.price}
-              imageSrc={cls.imageSrc}
+              price={`$${cls.price}`}
+              imageSrc={cls.image || '/images/gallery-2.jpg'}
               badge={cls.badge}
-              paymentLink={cls.paymentLink}
-              delay={`fade-in-delay-${(index % 3) + 1}`}
+              totalTickets={cls.totalTickets}
+              ticketsSold={cls.ticketsSold || 0}
+              delay={`fade-in-delay-${(index % 4) + 1}`}
             />
           ))
         ) : (
-          <>
-            <ClassCard 
-              title="Suncatcher Mosaic Workshop"
-              description="Create a stunning glass mosaic suncatcher to hang in your window."
-              dateStr="Sat, May 17 · 2:00 PM"
-              location="Studio 42, Brooklyn NY"
-              price="$65"
-              imageSrc="/images/gallery-2.jpg"
-              badge="Limited Spots"
-              delay="fade-in-delay-1"
-            />
-            <ClassCard 
-              title="Mosaic Coaster Set"
-              description="Design and grout a set of four beautiful mosaic coasters to take home."
-              dateStr="Sun, May 25 · 11:00 AM"
-              location="The Maker Space, Williamsburg"
-              price="$55"
-              imageSrc="/images/gallery-3.jpg"
-              delay="fade-in-delay-2"
-            />
-            <ClassCard 
-              title="Mosaic Picture Frame"
-              description="Craft a one-of-a-kind mosaic frame — perfect as a gift or keepsake."
-              dateStr="Sat, Jun 7 · 3:00 PM"
-              location="Studio 42, Brooklyn NY"
-              price="$60"
-              imageSrc="/images/gallery-4.jpg"
-              delay="fade-in-delay-3"
-            />
-          </>
+          <p style="color:var(--color-text-light);grid-column:1/-1;text-align:center;padding:40px 0;">
+            Classes coming soon — check back shortly!
+          </p>
         )}
       </div>
     </div>
@@ -180,4 +165,5 @@ const featuredClasses = stripeClasses.slice(0, 3);
   </section>
 
   <Lightbox />
+  <CheckoutModal />
 </Base>

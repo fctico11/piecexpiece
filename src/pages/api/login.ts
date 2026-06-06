@@ -21,7 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
   return new Response(null, {
     status: 302,
     headers: {
-      Location: '/admin',
+      Location: '/admin/classes',
       'Set-Cookie': `pxp_auth=${cookieVal}; Path=/; HttpOnly; SameSite=Strict${isSecure ? '; Secure' : ''}; Max-Age=86400`,
     },
   });

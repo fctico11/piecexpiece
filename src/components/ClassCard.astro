@@ -1,5 +1,6 @@
 ---
 export interface Props {
+  id: string;
   title: string;
   description: string;
   dateStr: string;
@@ -9,25 +10,33 @@ export interface Props {
   imageSrc: string;
   badge?: string;
   delay?: string;
-  paymentLink?: string;
+  totalTickets?: number;
+  ticketsSold?: number;
 }
 
-const { 
-  title, 
-  description, 
-  dateStr, 
-  duration, 
-  location, 
-  price, 
-  imageSrc, 
-  badge, 
+const {
+  id,
+  title,
+  description,
+  dateStr,
+  duration,
+  location,
+  price,
+  imageSrc,
+  badge,
   delay = "",
-  paymentLink 
+  totalTickets = 0,
+  ticketsSold  = 0,
 } = Astro.props;
+
+const remaining  = totalTickets > 0 ? totalTickets - ticketsSold : null;
+const soldOut    = remaining !== null && remaining <= 0;
+const lowTickets = remaining !== null && remaining > 0 && remaining <= 5;
+const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spots' : null));
 ---
 
 <div class={`class-card fade-in ${delay}`}>
-  {badge && <div class="class-card__badge">{badge}</div>}
+  {displayBadge && <div class="class-card__badge">{displayBadge}</div>}
   <div class="class-card__img">
     <img src={imageSrc} alt={title} loading="lazy" />
   </div>
@@ -49,13 +58,26 @@ const {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         {location}
       </div>
+      {remaining !== null && !soldOut && (
+        <div class="class-card__meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          {remaining} spot{remaining !== 1 ? 's' : ''} left
+        </div>
+      )}
     </div>
     <div class="class-card__price">{price} <span>/ person</span></div>
     <div class="class-card__footer">
-      {paymentLink ? (
-        <a href={paymentLink} class="btn btn--primary btn--full" target="_blank" rel="noopener noreferrer">Get Tickets</a>
+      {soldOut ? (
+        <button class="btn btn--primary btn--full" disabled style="opacity:.5;cursor:not-allowed;">Sold Out</button>
       ) : (
-        <button class="btn btn--primary btn--full btn-tickets" data-class={title}>Get Tickets</button>
+        <button
+          class="btn btn--primary btn--full btn-get-tickets"
+          data-class-id={id}
+          data-class-title={title}
+          data-class-price={price}
+        >
+          Get Tickets
+        </button>
       )}
       <span class="stripe-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -64,22 +86,3 @@ const {
     </div>
   </div>
 </div>
-
-<script>
-  // Mock Stripe checkout fallback (only runs if paymentLink is NOT provided)
-  const buttons = document.querySelectorAll('.btn-tickets');
-  buttons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLButtonElement;
-      e.preventDefault();
-      const name = target.dataset.class || 'Workshop';
-      target.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Redirecting…`;
-      target.style.pointerEvents = 'none';
-      setTimeout(() => {
-        target.innerHTML = 'Get Tickets';
-        target.style.pointerEvents = '';
-        alert(`No Stripe link connected yet.\n\nOnce added in the CMS, this button will direct directly to checkout.`);
-      }, 1500);
-    });
-  });
-</script>
