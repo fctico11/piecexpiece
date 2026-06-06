@@ -370,10 +370,48 @@ function fmtDate(d: string) {
       padding-top: 20px; border-top: 1px solid rgba(26,58,92,0.08); margin-top: 4px;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
+      /* Page padding */
+      .page { padding: 20px 16px 80px; }
+
+      /* List topbar — stack vertically */
+      .list-topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .list-topbar h1 { font-size: 1.15rem; }
+      .btn-primary { width: 100%; justify-content: center; }
+
+      /* Section header — hide the hint, show badge inline */
+      .section-header { flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .section-header > span:last-child { display: none; } /* hide "★ = showing on homepage" */
+
+      /* Featured grid — 2 compact columns */
+      .featured-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+      .featured-slot__body { padding: 8px 10px 10px; }
+      .featured-slot__title { font-size: 0.78rem; }
+      .featured-slot__meta  { font-size: 0.68rem; margin-bottom: 8px; }
+      .featured-slot__actions { gap: 4px; }
+      .featured-slot__actions .btn-ghost { font-size: 0.72rem; padding: 5px 8px; }
+      .empty-slot { font-size: 0.72rem; gap: 6px; padding: 12px 8px; }
+      .empty-slot svg { width: 18px; height: 18px; }
+
+      /* All classes list */
+      .class-list { gap: 8px; margin-bottom: 24px; }
+      .class-row { flex-wrap: wrap; gap: 10px; padding: 12px; }
+      .class-row__img, .class-row__img-ph { width: 52px; height: 52px; border-radius: 6px; }
+      .class-row__body { min-width: 0; flex: 1; }
+      .class-row__title { font-size: 0.85rem; }
+      .class-row__meta  { font-size: 0.72rem; gap: 6px; }
+      /* Actions wrap below the content row */
+      .class-row__actions {
+        flex-direction: row; flex-wrap: wrap;
+        width: 100%; border-top: 1px solid rgba(26,58,92,0.07);
+        padding-top: 10px; gap: 6px;
+      }
+      .class-row__actions .btn-ghost { flex: 1; justify-content: center; font-size: 0.75rem; }
+
+      /* Form grid */
       .form-grid { grid-template-columns: 1fr; }
-      .class-row__actions { flex-direction: column; align-items: flex-start; gap: 6px; }
-      .featured-grid { grid-template-columns: 1fr 1fr; }
+      .form-actions { flex-direction: column-reverse; }
+      .btn-publish, .btn-cancel { width: 100%; justify-content: center; }
     }
   </style>
 </head>
