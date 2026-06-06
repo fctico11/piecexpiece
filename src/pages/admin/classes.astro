@@ -64,24 +64,23 @@ function fmtDate(d: string) {
     /* ── Topbar ──────────────────────────────────────────────────────────── */
     .topbar {
       position: sticky; top: 0; z-index: 100; height: 52px;
-      background: #fff;
-      border-bottom: 1px solid rgba(26,58,92,0.12);
+      background: #1a1f2e;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex; align-items: center; padding: 0 16px;
-      box-shadow: 0 1px 8px rgba(26,58,92,0.06);
     }
     .topbar__brand {
       font-size: 0.88rem; font-weight: 700;
-      color: #1a3a5c; white-space: nowrap; letter-spacing: 0.03em;
+      color: #5fb8b0; white-space: nowrap; letter-spacing: 0.03em;
     }
-    .topbar__sep { width: 1px; height: 22px; background: rgba(26,58,92,0.15); margin: 0 10px; }
+    .topbar__sep { width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 10px; }
     .topbar__nav { display: flex; height: 100%; }
     .topbar__nav a {
       display: flex; align-items: center; height: 100%; padding: 0 16px;
-      font-size: 0.82rem; font-weight: 600; color: #7a8fa6; text-decoration: none;
+      font-size: 0.82rem; font-weight: 600; color: #64748b; text-decoration: none;
       border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
     }
-    .topbar__nav a:hover { color: #1a3a5c; }
-    .topbar__nav a.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
+    .topbar__nav a:hover { color: #e2e8f0; }
+    .topbar__nav a.active { color: #e2e8f0; border-bottom-color: #e2e8f0; }
 
     /* ── Page ────────────────────────────────────────────────────────────── */
     .page { max-width: 880px; margin: 0 auto; padding: 36px 24px 100px; }
@@ -384,8 +383,8 @@ function fmtDate(d: string) {
   <span class="topbar__brand">✦ Piece x Piece</span>
   <div class="topbar__sep"></div>
   <nav class="topbar__nav">
-    <a href="/admin">Theme Editor</a>
     <a href="/admin/classes" class="active">Classes</a>
+    <a href="/admin">Theme Editor</a>
   </nav>
 </div>
 
