@@ -292,6 +292,21 @@ p { max-width: 640px; }
 .class-card__price span { font-size: 0.85rem; font-weight: 400; color: var(--color-text-light); }
 .class-card__footer { display: flex; flex-direction: column; gap: 10px; }
 
+/* Class card — mobile compact */
+@media (max-width: 640px) {
+  .class-card__img img { aspect-ratio: 16/9; }
+  .class-card__body { padding: 16px 18px 20px; }
+  .class-card__name { font-size: 1.1rem; margin-bottom: 4px; }
+  .class-card__desc { font-size: 0.82rem; margin-bottom: 12px; -webkit-line-clamp: 2; }
+  .class-card__meta { gap: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  .class-card__meta-item { font-size: 0.78rem; gap: 8px; }
+  .class-card__meta-item svg { width: 14px; height: 14px; }
+  .class-card__price { font-size: 1.4rem; margin-bottom: 12px; padding-top: 12px; }
+  .class-card__price span { font-size: 0.8rem; }
+  .class-card__footer { gap: 8px; }
+  .class-card__info-btn { width: 32px; height: 32px; top: 10px; right: 10px; }
+}
+
 /* Stripe Note */
 .stripe-note { font-size: 0.72rem; color: var(--color-text-light); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
 .stripe-note svg { width: 14px; height: 14px; color: var(--color-turquoise-vibrant); }

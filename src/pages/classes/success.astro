@@ -12,7 +12,7 @@ const mapsUrl   = location ? `https://www.google.com/maps/search/?api=1&query=${
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 120px 24px 80px;
+      padding: 100px 24px 60px;
       position: relative;
       overflow: hidden;
       background: linear-gradient(160deg, #f5f0ea 0%, #e8f4f3 60%, #d6eeec 100%);
@@ -234,9 +234,24 @@ const mapsUrl   = location ? `https://www.google.com/maps/search/?api=1&query=${
     }
 
     @media (max-width: 560px) {
-      .success-card { padding: 40px 24px 36px; }
-      .success-card h1 { font-size: 1.9rem; }
-      .details-row { flex-direction: column; align-items: center; }
+      .success-wrap { padding: 80px 16px 24px; align-items: flex-start; }
+      .success-card { padding: 28px 20px 24px; border-radius: 18px; }
+      .check-ring { width: 64px; height: 64px; margin-bottom: 16px; box-shadow: 0 0 0 8px rgba(95,184,176,0.15), 0 0 0 16px rgba(95,184,176,0.06); }
+      .check-ring svg { width: 28px; height: 28px; }
+      .confetti-line { font-size: 1.3rem; margin-bottom: 6px; }
+      .success-card h1 { font-size: 1.7rem; margin-bottom: 8px; }
+      .class-name-badge { font-size: 0.9rem; padding: 5px 14px; margin-bottom: 12px; }
+      .success-card p { font-size: 0.88rem; margin-bottom: 16px; }
+      .details-row { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px; }
+      .detail-chip { font-size: 0.75rem; padding: 5px 10px; }
+      .directions-block { padding: 10px 12px; margin-bottom: 18px; gap: 10px; }
+      .directions-pin { width: 32px; height: 32px; }
+      .directions-pin svg { width: 15px; height: 15px; }
+      .directions-label { font-size: 0.65rem; }
+      .directions-address { font-size: 0.8rem; }
+      .directions-cta { font-size: 0.72rem; }
+      .btn-row { gap: 8px; }
+      .btn-success-primary, .btn-success-ghost { padding: 12px 20px; font-size: 0.8rem; }
     }
   </style>
 
