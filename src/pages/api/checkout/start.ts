@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           quantity: 1,
         },
       ],
-      return_url: `${origin}/classes/success?session_id={CHECKOUT_SESSION_ID}&class=${encodeURIComponent(cls.title)}`,
+      return_url: `${origin}/classes/success?session_id={CHECKOUT_SESSION_ID}&class=${encodeURIComponent(cls.title)}&location=${encodeURIComponent(cls.location ?? '')}`,
       metadata: { classId, className: cls.title },
     });
 

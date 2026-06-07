@@ -248,6 +248,16 @@ p { max-width: 640px; }
   overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition); position: relative;
 }
 .class-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-lg); background: rgba(255,255,255,0.8); }
+.class-card__info-btn {
+  position: absolute; top: 14px; right: 14px; z-index: 3;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.92); border: 2px solid var(--color-turquoise);
+  backdrop-filter: blur(8px); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-primary); transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 10px rgba(95,184,176,0.35);
+}
+.class-card__info-btn:hover { background: white; transform: scale(1.1); box-shadow: 0 4px 16px rgba(95,184,176,0.5); }
 .class-card__badge {
   position: absolute; top: 16px; left: 24px; z-index: 2; padding: 6px 14px;
   background: rgba(255,255,255,0.85); color: var(--color-primary);

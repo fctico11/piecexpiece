@@ -2,6 +2,8 @@
 export const prerender = false;
 import Base from '../../layouts/Base.astro';
 const className = Astro.url.searchParams.get('class') ?? 'your class';
+const location  = Astro.url.searchParams.get('location') ?? '';
+const mapsUrl   = location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : '';
 ---
 <Base title="You're Registered! — Piece x Piece" description="Your spot is confirmed.">
   <style>
@@ -170,6 +172,67 @@ const className = Astro.url.searchParams.get('class') ?? 'your class';
       75% { transform: rotate(10deg); }
     }
 
+    .directions-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, #f0faf9, #e8f4f3);
+      border: 1.5px solid rgba(95,184,176,0.35);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 28px;
+      text-decoration: none;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      text-align: left;
+    }
+    .directions-block:hover {
+      border-color: var(--color-turquoise);
+      box-shadow: 0 4px 16px rgba(95,184,176,0.2);
+      transform: translateY(-1px);
+    }
+    .directions-pin {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-turquoise), var(--color-emerald));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .directions-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .directions-label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-turquoise);
+      margin-bottom: 2px;
+    }
+    .directions-address {
+      display: block;
+      font-size: 0.88rem;
+      color: var(--color-primary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .directions-cta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-turquoise);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     @media (max-width: 560px) {
       .success-card { padding: 40px 24px 36px; }
       .success-card h1 { font-size: 1.9rem; }
@@ -207,13 +270,32 @@ const className = Astro.url.searchParams.get('class') ?? 'your class';
       <div class="details-row">
         <div class="detail-chip">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M16 2v4M8 2v4M4 10h16"/></svg>
-          Details sent to your email
+          Receipt sent to your email
         </div>
         <div class="detail-chip">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Secure payment
         </div>
       </div>
+
+      {mapsUrl && (
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" class="directions-block">
+          <div class="directions-pin">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div class="directions-text">
+            <span class="directions-label">Venue</span>
+            <span class="directions-address">{location}</span>
+          </div>
+          <div class="directions-cta">
+            Get Directions
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </a>
+      )}
 
       <div class="btn-row">
         <a href="/classes" class="btn-success-primary">Browse More Classes</a>

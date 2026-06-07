@@ -1,0 +1,172 @@
+---
+// ClassDetailModal.astro
+// No props — populated dynamically via JS from card data attributes
+---
+
+<div id="classDetailModal" style="display:none; position:fixed; inset:0; z-index:4000; background:rgba(10,20,40,0.72); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+  <div id="classDetailBox" style="background:#fff; border-radius:20px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 32px 80px rgba(0,0,0,0.35);">
+
+    <!-- Hero image -->
+    <div style="position:relative; height:220px; overflow:hidden; border-radius:20px 20px 0 0;">
+      <img id="cdImage" src="" alt="" style="width:100%;height:100%;object-fit:cover;" />
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom, transparent 40%, rgba(10,20,40,0.6) 100%);"></div>
+      <button id="classDetailClose" style="position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.2);">×</button>
+      <div id="cdBadge" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.9);color:#1a3a5c;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:100px;"></div>
+    </div>
+
+    <!-- Content -->
+    <div style="padding:28px 28px 32px;">
+      <h2 id="cdTitle" style="font-size:1.6rem;color:var(--color-primary);margin:0 0 8px;line-height:1.2;"></h2>
+      <div id="cdPrice" style="font-size:1.1rem;font-weight:700;color:var(--color-turquoise);margin-bottom:18px;"></div>
+
+      <!-- Meta chips -->
+      <div id="cdMeta" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;"></div>
+
+      <!-- Description -->
+      <p id="cdDescription" style="color:#4a5568;line-height:1.7;font-size:0.95rem;margin:0 0 24px;"></p>
+
+      <!-- Directions block -->
+      <div id="cdDirectionsWrap" style="display:none;margin-bottom:28px;">
+        <a id="cdDirectionsLink" href="#" target="_blank" rel="noopener noreferrer"
+          style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f0faf9,#e8f4f3);border:1.5px solid rgba(95,184,176,0.35);border-radius:14px;padding:14px 16px;text-decoration:none;transition:border-color 0.2s,transform 0.15s;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--color-turquoise),var(--color-emerald));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <span style="display:block;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-turquoise);margin-bottom:2px;">Venue</span>
+            <span id="cdLocation" style="display:block;font-size:0.88rem;color:var(--color-primary);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.8rem;font-weight:700;color:var(--color-turquoise);white-space:nowrap;flex-shrink:0;">
+            Get Directions
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </a>
+      </div>
+
+      <!-- Spots remaining -->
+      <div id="cdSpots" style="margin-bottom:24px;"></div>
+
+      <!-- CTA -->
+      <div id="cdCTA" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const modal   = document.getElementById('classDetailModal') as HTMLElement;
+const box     = document.getElementById('classDetailBox') as HTMLElement;
+
+function openDetail(card: HTMLElement) {
+  const title       = card.dataset.infoTitle       ?? '';
+  const description = card.dataset.infoDescription ?? '';
+  const date        = card.dataset.infoDate        ?? '';
+  const duration    = card.dataset.infoDuration    ?? '';
+  const location    = card.dataset.infoLocation    ?? '';
+  const price       = card.dataset.infoPrice       ?? '';
+  const image       = card.dataset.infoImage       ?? '';
+  const remaining   = card.dataset.infoRemaining   ?? '';
+  const soldOut     = card.dataset.infoSoldout === 'true';
+  const classId     = card.dataset.infoId          ?? '';
+
+  // Image
+  const img = document.getElementById('cdImage') as HTMLImageElement;
+  img.src = image; img.alt = title;
+
+  // Badge
+  const badge = document.getElementById('cdBadge') as HTMLElement;
+  if (soldOut) {
+    badge.textContent = 'Sold Out'; badge.style.display = '';
+  } else if (remaining && Number(remaining) <= 5) {
+    badge.textContent = 'Limited Spots'; badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Text
+  (document.getElementById('cdTitle') as HTMLElement).textContent = title;
+  (document.getElementById('cdPrice') as HTMLElement).textContent = price + ' / person';
+  (document.getElementById('cdDescription') as HTMLElement).textContent = description;
+
+  // Meta chips
+  const meta = document.getElementById('cdMeta') as HTMLElement;
+  meta.innerHTML = '';
+  const chip = (icon: string, text: string) => `
+    <div style="display:flex;align-items:center;gap:6px;background:#f5f0ea;border-radius:100px;padding:6px 12px;font-size:0.8rem;color:var(--color-primary);font-weight:500;">
+      ${icon}<span>${text}</span>
+    </div>`;
+  const calIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  const clkIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+  if (date)     meta.innerHTML += chip(calIcon, date);
+  if (duration) meta.innerHTML += chip(clkIcon, duration);
+
+  // Directions
+  const dirWrap = document.getElementById('cdDirectionsWrap') as HTMLElement;
+  const dirLink = document.getElementById('cdDirectionsLink') as HTMLAnchorElement;
+  const locSpan = document.getElementById('cdLocation') as HTMLElement;
+  if (location) {
+    dirWrap.style.display = '';
+    dirLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+    locSpan.textContent = location;
+  } else {
+    dirWrap.style.display = 'none';
+  }
+
+  // Spots
+  const spots = document.getElementById('cdSpots') as HTMLElement;
+  if (remaining && !soldOut) {
+    const n = Number(remaining);
+    const color = n <= 5 ? '#e2725b' : 'var(--color-primary)';
+    spots.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:${color};font-weight:600;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      ${n} spot${n !== 1 ? 's' : ''} remaining
+    </div>`;
+  } else {
+    spots.innerHTML = '';
+  }
+
+  // CTA
+  const cta = document.getElementById('cdCTA') as HTMLElement;
+  if (soldOut) {
+    cta.innerHTML = `<button disabled style="background:#e5e7eb;color:#9ca3af;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:not-allowed;flex:1;">Sold Out</button>`;
+  } else {
+    cta.innerHTML = `
+      <button class="btn-get-tickets" data-class-id="${classId}" data-class-title="${title}" data-class-price="${price}"
+        style="background:var(--color-primary);color:white;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;flex:1;transition:background 0.2s;">
+        Get Tickets
+      </button>`;
+  }
+
+  // Show modal
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('classDetailClose')!.addEventListener('click', closeDetail);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeDetail(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
+
+// Info button clicks
+document.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.btn-show-info');
+  if (!btn) return;
+  e.stopPropagation();
+  const card = btn.closest('[data-info-id]') as HTMLElement;
+  if (card) openDetail(card);
+});
+
+// Close detail modal when Get Tickets is clicked inside it
+modal.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.btn-get-tickets');
+  if (!btn) return;
+  closeDetail();
+  // body overflow will be re-locked by checkout modal
+});
+</script>

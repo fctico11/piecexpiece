@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import ClassCard from '../components/ClassCard.astro';
 import CTABanner from '../components/CTABanner.astro';
 import CheckoutModal from '../components/CheckoutModal.astro';
+import ClassDetailModal from '../components/ClassDetailModal.astro';
 import classData from '../data/classes.json';
 
 const title = "Classes & Private Workshops — Piece x Piece Mosaics";
@@ -127,4 +128,5 @@ function fmtClassDate(cls: any) {
     </div>
   </section>
   <CheckoutModal />
+  <ClassDetailModal />
 </Base>

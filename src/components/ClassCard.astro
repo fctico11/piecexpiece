@@ -35,8 +35,26 @@ const lowTickets = remaining !== null && remaining > 0 && remaining <= 5;
 const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spots' : null));
 ---
 
-<div class={`class-card fade-in ${delay}`}>
+<div
+  class={`class-card fade-in ${delay}`}
+  data-info-id={id}
+  data-info-title={title}
+  data-info-description={description}
+  data-info-date={dateStr}
+  data-info-duration={duration ?? ''}
+  data-info-location={location}
+  data-info-price={price}
+  data-info-image={imageSrc}
+  data-info-remaining={remaining !== null ? String(remaining) : ''}
+  data-info-soldout={soldOut ? 'true' : 'false'}
+>
   {displayBadge && <div class="class-card__badge">{displayBadge}</div>}
+  <!-- Info button -->
+  <button class="class-card__info-btn btn-show-info" aria-label="More info">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="17"/>
+    </svg>
+  </button>
   <div class="class-card__img">
     <img src={imageSrc} alt={title} loading="lazy" />
   </div>
