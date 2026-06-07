@@ -24,6 +24,13 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   try {
     const origin = url.origin;
+    // Build class detail line for receipt (date + duration + location)
+    const detailParts = [
+      cls.dateStr,
+      cls.duration ? `${cls.duration}` : null,
+      cls.location ? `📍 ${cls.location}` : null,
+    ].filter(Boolean).join('  ·  ');
+
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       mode: 'payment',
@@ -33,6 +40,12 @@ export const POST: APIRoute = async ({ request, url }) => {
           quantity: 1,
         },
       ],
+      custom_text: {
+        after_submit: {
+          message: `You're registering for **${cls.title}**\n${detailParts}\n\nBring your creativity — we'll handle the rest. See you there! 🎨`,
+        },
+      },
+      receipt_email: undefined, // Stripe collects email from the form automatically
       return_url: `${origin}/classes/success?session_id={CHECKOUT_SESSION_ID}&class=${encodeURIComponent(cls.title)}&location=${encodeURIComponent(cls.location ?? '')}`,
       metadata: { classId, className: cls.title },
     });
