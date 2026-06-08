@@ -1,3 +1,21 @@
 {
-  "classes": []
+  "classes": [
+    {
+      "id": "pop-up-mini-mosaic-workshop-20260613",
+      "title": "Pop-up Mini Mosaic Workshop",
+      "description": "Join us for a, hands-on mosaic workshop where you'll create and complete your very own mosaic project in a single session and take it home the same day!",
+      "location": "Index Art Center 245 Halsey Street",
+      "date": "2026-06-13",
+      "time": "7:00 PM",
+      "duration": "2 hours",
+      "price": 35,
+      "totalTickets": 15,
+      "ticketsSold": 0,
+      "badge": "ART SHOW",
+      "featured": true,
+      "image": "/images/classes/pop-up-mini-mosaic-workshop-20260613.jpg",
+      "stripeProductId": "prod_UfRvHELlcwQq4O",
+      "stripePriceId": "price_1Tg71GROLHqxegkZwTL0HopH"
+    }
+  ]
 }
