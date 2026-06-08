@@ -6,11 +6,14 @@
 <div id="classDetailModal" style="display:none; position:fixed; inset:0; z-index:4000; background:rgba(10,20,40,0.72); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
   <div id="classDetailBox" style="background:#fff; border-radius:20px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 32px 80px rgba(0,0,0,0.35);">
 
+    <!-- Zero-height sticky bar keeps close button pinned to top-right always -->
+    <div style="position:sticky;top:0;z-index:10;height:0;overflow:visible;display:flex;justify-content:flex-end;padding:12px 12px 0 0;">
+      <button id="classDetailClose" style="width:38px;height:38px;border-radius:50%;border:3px solid white;background:var(--color-turquoise);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;box-shadow:0 3px 12px rgba(26,58,92,0.3);flex-shrink:0;">×</button>
+    </div>
+
     <!-- Hero image -->
     <div style="position:relative; border-radius:20px 20px 0 0; overflow:hidden; background:#f5f0ea;">
       <img id="cdImage" src="" alt="" style="width:100%;display:block;object-fit:contain;max-height:420px;" />
-      <!-- Sticky close button sits on top of the image -->
-      <button id="classDetailClose" style="position:sticky;top:12px;float:right;margin:-44px 12px 0 0;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.95);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;">×</button>
       <div id="cdBadge" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.9);color:#1a3a5c;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:100px;"></div>
     </div>
 
