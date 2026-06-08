@@ -24,28 +24,43 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   try {
     const origin = url.origin;
-    // Build class detail line for receipt (date + duration + location)
+
+    // Build human-readable date string from stored date + time fields
+    const d = new Date(cls.date + 'T00:00:00');
+    const dayStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const dateStr = cls.time ? `${dayStr} at ${cls.time}` : dayStr;
+
+    // Build detail string shown in receipt and confirmation
     const detailParts = [
-      cls.dateStr,
-      cls.duration ? `${cls.duration}` : null,
-      cls.location ? `📍 ${cls.location}` : null,
-    ].filter(Boolean).join('  ·  ');
+      dateStr,
+      cls.duration || null,
+      cls.location ? `Location: ${cls.location}` : null,
+    ].filter(Boolean).join(' · ');
 
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       mode: 'payment',
       line_items: [
         {
-          price: cls.stripePriceId,
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(cls.price * 100), // price in cents
+            product_data: {
+              name: cls.title,
+              description: detailParts || undefined,
+            },
+          },
           quantity: 1,
         },
       ],
+      payment_intent_data: {
+        description: `${cls.title} — ${detailParts}`,
+      },
       custom_text: {
         after_submit: {
-          message: `You're registering for **${cls.title}**\n${detailParts}\n\nBring your creativity — we'll handle the rest. See you there! 🎨`,
+          message: `You're registering for **${cls.title}**. ${detailParts}. Bring your creativity — we'll handle the rest. See you there!`,
         },
       },
-      receipt_email: undefined, // Stripe collects email from the form automatically
       return_url: `${origin}/classes/success?session_id={CHECKOUT_SESSION_ID}&class=${encodeURIComponent(cls.title)}&location=${encodeURIComponent(cls.location ?? '')}`,
       metadata: { classId, className: cls.title },
     });
