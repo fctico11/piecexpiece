@@ -167,23 +167,39 @@ const description = "Get in touch with Piece x Piece Mosaics. Ask a question, re
     }
 
     if (contactForm) {
-      contactForm.addEventListener('submit', (e) => {
+      contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = contactForm.querySelector('button[type="submit"]') as HTMLButtonElement;
         if (!btn) return;
         const originalText = btn.textContent;
         btn.textContent = 'Sending…';
         btn.disabled = true;
-        setTimeout(() => {
+
+        try {
+          const formData = new FormData(contactForm as HTMLFormElement);
+          const res = await fetch('/api/contact', { method: 'POST', body: formData });
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.error || 'Failed to send');
+
           btn.textContent = 'Message Sent ✓';
           btn.style.background = 'var(--color-turquoise-vibrant)';
           setTimeout(() => {
             (contactForm as HTMLFormElement).reset();
+            syncInquiryFields();
             btn.textContent = originalText;
             btn.disabled = false;
             btn.style.background = '';
           }, 2500);
-        }, 1200);
+        } catch (err: any) {
+          btn.textContent = 'Failed — try again';
+          btn.style.background = '#e2725b';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.style.background = '';
+          }, 3000);
+        }
       });
     }
   </script>
