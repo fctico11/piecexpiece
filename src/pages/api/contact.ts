@@ -91,7 +91,7 @@ export const POST: APIRoute = async ({ request }) => {
         <!-- Reply CTA -->
         <tr><td style="background:#f8f6f2;border-top:1px solid #e8e2d9;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;">
           <a href="mailto:${email}?subject=Re: Your Piece x Piece Inquiry" style="display:inline-block;background:#1a3a5c;color:#ffffff;font-size:0.82rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:12px 24px;border-radius:100px;text-decoration:none;">Reply to ${name}</a>
-          <p style="margin:12px 0 0;font-size:0.75rem;color:#9ca3af;">Submitted via piecexpiece.com</p>
+          <p style="margin:12px 0 0;font-size:0.75rem;color:#9ca3af;">Submitted via piecexpiecemosaics.com</p>
         </td></tr>
 
       </table>
