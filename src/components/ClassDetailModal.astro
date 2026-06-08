@@ -6,10 +6,12 @@
 <div id="classDetailModal" style="display:none; position:fixed; inset:0; z-index:4000; background:rgba(10,20,40,0.72); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
   <div id="classDetailBox" style="background:#fff; border-radius:20px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 32px 80px rgba(0,0,0,0.35);">
 
+    <!-- Sticky close button — always visible while scrolling -->
+    <button id="classDetailClose" style="position:sticky;top:12px;float:right;margin:12px 12px 0 0;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.95);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;flex-shrink:0;">×</button>
+
     <!-- Hero image -->
-    <div style="position:relative; border-radius:20px 20px 0 0; overflow:hidden; background:#f5f0ea;">
+    <div style="position:relative; border-radius:20px 20px 0 0; overflow:hidden; background:#f5f0ea; margin-top:-48px;">
       <img id="cdImage" src="" alt="" style="width:100%;display:block;object-fit:contain;max-height:420px;" />
-      <button id="classDetailClose" style="position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.2);">×</button>
       <div id="cdBadge" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.9);color:#1a3a5c;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:100px;"></div>
     </div>
 
