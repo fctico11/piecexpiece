@@ -12,6 +12,7 @@ export interface Props {
   delay?: string;
   totalTickets?: number;
   ticketsSold?: number;
+  externalUrl?: string | null;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
   delay = "",
   totalTickets = 0,
   ticketsSold  = 0,
+  externalUrl  = null,
 } = Astro.props;
 
 const remaining  = totalTickets > 0 ? totalTickets - ticketsSold : null;
@@ -47,6 +49,7 @@ const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spo
   data-info-image={imageSrc}
   data-info-remaining={remaining !== null ? String(remaining) : ''}
   data-info-soldout={soldOut ? 'true' : 'false'}
+  data-info-external={externalUrl ?? ''}
 >
   {displayBadge && <div class="class-card__badge">{displayBadge}</div>}
   <!-- Info button -->
@@ -87,6 +90,16 @@ const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spo
     <div class="class-card__footer">
       {soldOut ? (
         <button class="btn btn--primary btn--full" disabled style="opacity:.5;cursor:not-allowed;">Sold Out</button>
+      ) : externalUrl ? (
+        <a
+          href={externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn--primary btn--full"
+          style="text-align:center;text-decoration:none;"
+        >
+          Get Tickets
+        </a>
       ) : (
         <button
           class="btn btn--primary btn--full btn-get-tickets"

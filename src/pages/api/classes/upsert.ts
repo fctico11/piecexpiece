@@ -67,6 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
     totalTickets: number;
     badge?: string;
     featured: boolean;
+    externalUrl?: string | null;
     imageBase64?: string;
     imageExt?: string;
     stripeProductId?: string;
@@ -88,11 +89,12 @@ export const POST: APIRoute = async ({ request }) => {
     'Content-Type': 'application/json',
   };
 
-  const stripeKey = import.meta.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) {
+  const isExternal = !!body.externalUrl;
+  const stripeKey  = import.meta.env.STRIPE_SECRET_KEY;
+  if (!isExternal && !stripeKey) {
     return new Response(JSON.stringify({ error: 'STRIPE_SECRET_KEY not set' }), { status: 500 });
   }
-  const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' });
+  const stripe = isExternal ? null : new Stripe(stripeKey!, { apiVersion: '2025-02-24.acacia' });
 
   const isEdit   = !!body.id;
   const classId  = body.id || slugify(body.title, body.date);
@@ -114,60 +116,56 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // ── 2. Create or update Stripe Product ────────────────────────────────
-    const priceInCents = Math.round(body.price * 100);
-    const metadata = {
-      location:     body.location,
-      date:         body.date,
-      time:         body.time,
-      duration:     body.duration,
-      totalTickets: String(body.totalTickets),
-      ticketsSold:  '0',
-      featured:     body.featured ? 'true' : 'false',
-      badge:        body.badge || '',
-      classId,
-    };
-
+    // ── 2. Create or update Stripe Product (skip for external classes) ──────
     let stripeProductId = body.stripeProductId;
     let stripePriceId   = body.stripePriceId;
 
-    if (isEdit && stripeProductId) {
-      // Update existing Stripe product
-      await stripe.products.update(stripeProductId, {
-        name:        body.title,
-        description: body.description,
-        metadata,
-      });
+    if (!isExternal && stripe) {
+      const priceInCents = Math.round(body.price * 100);
+      const metadata = {
+        location:     body.location,
+        date:         body.date,
+        time:         body.time,
+        duration:     body.duration,
+        totalTickets: String(body.totalTickets),
+        ticketsSold:  '0',
+        featured:     body.featured ? 'true' : 'false',
+        badge:        body.badge || '',
+        classId,
+      };
 
-      // If price changed, create a new price and archive the old one
-      const existingPrice = await stripe.prices.retrieve(stripePriceId!);
-      if (existingPrice.unit_amount !== priceInCents) {
-        await stripe.prices.update(stripePriceId!, { active: false });
-        const newPrice = await stripe.prices.create({
+      if (isEdit && stripeProductId) {
+        await stripe.products.update(stripeProductId, {
+          name:        body.title,
+          description: body.description,
+          metadata,
+        });
+        const existingPrice = await stripe.prices.retrieve(stripePriceId!);
+        if (existingPrice.unit_amount !== priceInCents) {
+          await stripe.prices.update(stripePriceId!, { active: false });
+          const newPrice = await stripe.prices.create({
+            product:     stripeProductId,
+            unit_amount: priceInCents,
+            currency:    'usd',
+          });
+          await stripe.products.update(stripeProductId, { default_price: newPrice.id });
+          stripePriceId = newPrice.id;
+        }
+      } else {
+        const product = await stripe.products.create({
+          name:        body.title,
+          description: body.description,
+          metadata,
+        });
+        stripeProductId = product.id;
+        const price = await stripe.prices.create({
           product:     stripeProductId,
           unit_amount: priceInCents,
           currency:    'usd',
         });
-        await stripe.products.update(stripeProductId, { default_price: newPrice.id });
-        stripePriceId = newPrice.id;
+        stripePriceId = price.id;
+        await stripe.products.update(stripeProductId, { default_price: stripePriceId });
       }
-    } else {
-      // Create new Stripe product + price
-      const product = await stripe.products.create({
-        name:        body.title,
-        description: body.description,
-        metadata,
-      });
-      stripeProductId = product.id;
-
-      const price = await stripe.prices.create({
-        product:     stripeProductId,
-        unit_amount: priceInCents,
-        currency:    'usd',
-      });
-      stripePriceId = price.id;
-
-      await stripe.products.update(stripeProductId, { default_price: stripePriceId });
     }
 
     // ── 3. Read + update classes.json ─────────────────────────────────────
@@ -190,9 +188,10 @@ export const POST: APIRoute = async ({ request }) => {
       ticketsSold:    0,
       badge:          body.badge || null,
       featured:       body.featured,
+      externalUrl:    body.externalUrl || null,
       image:          body.imageBase64 ? imageUrl : (data.classes.find(c => c.id === classId)?.image || imageUrl),
-      stripeProductId,
-      stripePriceId,
+      stripeProductId: isExternal ? null : stripeProductId,
+      stripePriceId:   isExternal ? null : stripePriceId,
     };
 
     if (isEdit) {

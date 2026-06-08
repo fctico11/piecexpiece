@@ -621,6 +621,17 @@ function fmtDate(d: string) {
 
   <div class="form-divider"></div>
 
+  <!-- External Tickets -->
+  <div class="form-section">
+    <div class="form-section-label">External Ticketing <span class="opt" style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
+    <div class="field full">
+      <label>External Ticket URL <span class="opt">— if set, "Get Tickets" will link here instead of Stripe checkout</span></label>
+      <input type="url" id="fExternalUrl" placeholder="https://eventbrite.com/your-event or leave blank" />
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
   <!-- Visibility -->
   <div class="form-section">
     <div class="form-section-label">Visibility</div>
@@ -788,8 +799,9 @@ document.querySelectorAll('[data-edit]').forEach(btn => {
     document.getElementById('fDuration').value  = cls.duration    || '2 hours';
     document.getElementById('fPrice').value     = cls.price       || '';
     document.getElementById('fTickets').value   = cls.totalTickets|| '';
-    document.getElementById('fBadge').value     = cls.badge       || '';
-    document.getElementById('fFeatured').checked = !!cls.featured;
+    document.getElementById('fBadge').value       = cls.badge       || '';
+    document.getElementById('fExternalUrl').value = cls.externalUrl || '';
+    document.getElementById('fFeatured').checked  = !!cls.featured;
 
     if (cls.image) {
       document.getElementById('imgPreviewEl').src = cls.image;
@@ -873,16 +885,17 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
   const duration = document.getElementById('fDuration').value;
   const price    = parseFloat(document.getElementById('fPrice').value);
   const tickets  = parseInt(document.getElementById('fTickets').value);
-  const badge    = document.getElementById('fBadge').value.trim();
-  const featured = document.getElementById('fFeatured').checked;
+  const badge       = document.getElementById('fBadge').value.trim();
+  const externalUrl = document.getElementById('fExternalUrl').value.trim();
+  const featured    = document.getElementById('fFeatured').checked;
 
-  if (!title)              return alert('Please enter a class title.');
-  if (!desc)               return alert('Please enter a description.');
-  if (!location)           return alert('Please enter a location.');
-  if (!date)               return alert('Please select a date.');
-  if (!time)               return alert('Please select a start time.');
+  if (!title)    return alert('Please enter a class title.');
+  if (!desc)     return alert('Please enter a description.');
+  if (!location) return alert('Please enter a location.');
+  if (!date)     return alert('Please select a date.');
+  if (!time)     return alert('Please select a start time.');
   if (!price || price <= 0) return alert('Please enter a valid price.');
-  if (!tickets || tickets < 1) return alert('Please enter the number of tickets.');
+  if (!externalUrl && (!tickets || tickets < 1)) return alert('Please enter the number of tickets (or add an external ticket URL).');
   if (!imageBase64 && !existingImage) return alert('Please upload a class image.');
 
   const btn    = document.getElementById('btnPublish');
@@ -898,8 +911,9 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
       body: JSON.stringify({
         ...(editingId ? { id: editingId } : {}),
         title, description: desc, location, date,
-        time: fmtTime(time), duration, price, totalTickets: tickets,
+        time: fmtTime(time), duration, price, totalTickets: tickets || 0,
         badge: badge || null, featured,
+        externalUrl: externalUrl || null,
         ...(imageBase64   ? { imageBase64, imageExt }                           : {}),
         ...(editingStripeProductId ? { stripeProductId: editingStripeProductId } : {}),
         ...(editingStripePriceId   ? { stripePriceId:   editingStripePriceId   } : {}),
