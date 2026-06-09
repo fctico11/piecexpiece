@@ -16,6 +16,24 @@
       "image": "/images/classes/pop-up-mini-mosaic-workshop-20260613.jpg",
       "stripeProductId": "prod_UfRvHELlcwQq4O",
       "stripePriceId": "price_1Tg71GROLHqxegkZwTL0HopH"
+    },
+    {
+      "id": "pride-mosaic-workshop-20260622",
+      "title": "PRIDE Mosaic Workshop",
+      "description": "The theme is pride with the option of making your very own pride flag or feel free to make any design you would like!\n\nThis one-step mosaic workshop is designed for you to complete and take your finished project home the very same day! Whether you're a complete beginner or have some mosaic experience, this class offers a fun and creative way to learn a new skill while creating a unique piece of art.\nThroughout the workshop, we will guide you through every step of the process, from planning your design to placing and securing your mosaic pieces. You'll learn how to safely cut and break glass and ceramic materials, explore different mosaic techniques, and discover tips for creating beautiful patterns, textures, and color combinations.\nAll materials and tools are provided, and our instructors will be available to offer hands-on assistance and creative guidance throughout the class. By the end of the workshop, you'll leave with a completed mosaic project that reflects your personal style, along with the knowledge and confidence to continue exploring mosaic art on your own.\nCome ready to relax, get creative, and enjoy a rewarding artistic experience with a finished piece you'll be proud to display or gift!",
+      "location": "Six Points Pub 574 Bloomfield Avenue",
+      "date": "2026-06-22",
+      "time": "7:00 PM",
+      "duration": "2 hours",
+      "price": 55,
+      "totalTickets": 16,
+      "ticketsSold": 0,
+      "badge": null,
+      "featured": true,
+      "externalUrl": null,
+      "image": "/images/classes/pride-mosaic-workshop-20260622.jpg",
+      "stripeProductId": "prod_UfaVqWIeAAkTpq",
+      "stripePriceId": "price_1TgFKKBNynaUx0jlCFEzb0ls"
     }
   ]
 }
