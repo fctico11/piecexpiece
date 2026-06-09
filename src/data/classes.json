@@ -34,24 +34,6 @@
       "image": "/images/classes/pride-mosaic-workshop-20260622.jpg",
       "stripeProductId": "prod_UfaVqWIeAAkTpq",
       "stripePriceId": "price_1TgFKKBNynaUx0jlCFEzb0ls"
-    },
-    {
-      "id": "test-class-final-stripe-20260625",
-      "title": "Test Class Final Stripe",
-      "description": "test",
-      "location": "123 Main St, Brooklyn NY",
-      "date": "2026-06-25",
-      "time": "8:00 PM",
-      "duration": "3 hours",
-      "price": 1,
-      "totalTickets": 15,
-      "ticketsSold": 1,
-      "badge": null,
-      "featured": false,
-      "externalUrl": null,
-      "image": "/images/classes/test-class-final-stripe-20260625.jpg",
-      "stripeProductId": "prod_UfsY0HVnWCU07l",
-      "stripePriceId": "price_1TgWnbBNynaUx0jlYEbCpsKV"
     }
   ]
 }
