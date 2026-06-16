@@ -29,7 +29,7 @@
       "totalTickets": 0,
       "ticketsSold": 0,
       "badge": "First come first serve",
-      "featured": false,
+      "featured": true,
       "externalUrl": null,
       "promotional": true,
       "image": "/images/classes/mini-pop-up-mosaic-workshop-20260621.jpg",
