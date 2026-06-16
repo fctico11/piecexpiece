@@ -506,10 +506,16 @@ function fmtDate(d: string) {
               <div class="class-row__title">{cls.title}</div>
               <div class="class-row__meta">
                 <span>{fmtDate(cls.date)} · {cls.time}</span>
-                <span>${cls.price} / person</span>
-                <span>{rem} of {cls.totalTickets} spots left</span>
-                {rem === 0 && <span class="pill pill--red">Sold Out</span>}
-                {rem > 0 && rem <= 5 && <span class="pill pill--teal">Limited</span>}
+                {cls.promotional ? (
+                  <span class="pill pill--amber">Promotional — no tickets</span>
+                ) : (
+                  <>
+                    <span>${cls.price} / person</span>
+                    <span>{rem} of {cls.totalTickets} spots left</span>
+                    {rem === 0 && <span class="pill pill--red">Sold Out</span>}
+                    {rem > 0 && rem <= 5 && <span class="pill pill--teal">Limited</span>}
+                  </>
+                )}
               </div>
             </div>
             <div class="class-row__actions">
@@ -604,12 +610,12 @@ function fmtDate(d: string) {
           <option value="3 hours">3 hours</option>
         </select>
       </div>
-      <div class="field">
-        <label>Price (USD) <span style="color:#e2725b">*</span></label>
+      <div class="field" id="fPriceField">
+        <label>Price (USD) <span id="fPriceReq" style="color:#e2725b">*</span></label>
         <div class="input-pfx"><span>$</span><input type="number" id="fPrice" placeholder="65" min="1" step="0.01" /></div>
       </div>
-      <div class="field">
-        <label>Total Tickets <span style="color:#e2725b">*</span></label>
+      <div class="field" id="fTicketsField">
+        <label>Total Tickets <span id="fTicketsReq" style="color:#e2725b">*</span></label>
         <input type="number" id="fTickets" placeholder="20" min="1" step="1" />
       </div>
       <div class="field full">
@@ -622,7 +628,7 @@ function fmtDate(d: string) {
   <div class="form-divider"></div>
 
   <!-- External Tickets -->
-  <div class="form-section">
+  <div class="form-section" id="externalTicketSection">
     <div class="form-section-label">External Ticketing <span class="opt" style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
     <div class="field full">
       <label>External Ticket URL <span class="opt">— if set, "Get Tickets" will link here instead of Stripe checkout</span></label>
@@ -635,6 +641,16 @@ function fmtDate(d: string) {
   <!-- Visibility -->
   <div class="form-section">
     <div class="form-section-label">Visibility</div>
+    <div class="toggle-row" style="margin-bottom:12px;">
+      <label class="toggle">
+        <input type="checkbox" id="fPromotional" />
+        <span class="toggle__track"></span>
+      </label>
+      <div class="toggle-info">
+        <div class="toggle-label">Promotional Event (no ticket sales)</div>
+        <div class="toggle-sub">No price, no tickets, no Stripe checkout. The card shows a "More Info" button that just opens the details — use this for free pop-ups, festivals, or events sold elsewhere with no link to share.</div>
+      </div>
+    </div>
     <div class="toggle-row">
       <label class="toggle">
         <input type="checkbox" id="fFeatured" />
@@ -682,6 +698,17 @@ function showForm(title = 'New Class') {
   document.getElementById('formStatus').className = 'form-status';
   window.scrollTo({ top: 0 });
 }
+
+// ── Promotional toggle: hides price/tickets/external-url requirements ──────
+function applyPromotionalUI() {
+  const isPromo = document.getElementById('fPromotional').checked;
+  document.getElementById('fPriceField').style.display    = isPromo ? 'none' : '';
+  document.getElementById('fTicketsField').style.display  = isPromo ? 'none' : '';
+  document.getElementById('externalTicketSection').style.display = isPromo ? 'none' : '';
+  document.getElementById('fPriceReq').style.display   = isPromo ? 'none' : '';
+  document.getElementById('fTicketsReq').style.display = isPromo ? 'none' : '';
+}
+document.getElementById('fPromotional').addEventListener('change', applyPromotionalUI);
 
 document.getElementById('btnNew').addEventListener('click',      () => showForm('New Class'));
 document.getElementById('btnNewEmpty')?.addEventListener('click', () => showForm('New Class'));
@@ -767,6 +794,9 @@ function clearForm() {
   });
   document.getElementById('fDuration').value  = '2 hours';
   document.getElementById('fFeatured').checked = false;
+  document.getElementById('fPromotional').checked = false;
+  document.getElementById('fExternalUrl').value = '';
+  applyPromotionalUI();
 }
 
 // ── Edit ───────────────────────────────────────────────────────────────────
@@ -802,6 +832,8 @@ document.querySelectorAll('[data-edit]').forEach(btn => {
     document.getElementById('fBadge').value       = cls.badge       || '';
     document.getElementById('fExternalUrl').value = cls.externalUrl || '';
     document.getElementById('fFeatured').checked  = !!cls.featured;
+    document.getElementById('fPromotional').checked = !!cls.promotional;
+    applyPromotionalUI();
 
     if (cls.image) {
       document.getElementById('imgPreviewEl').src = cls.image;
@@ -888,14 +920,17 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
   const badge       = document.getElementById('fBadge').value.trim();
   const externalUrl = document.getElementById('fExternalUrl').value.trim();
   const featured    = document.getElementById('fFeatured').checked;
+  const promotional = document.getElementById('fPromotional').checked;
 
   if (!title)    return alert('Please enter a class title.');
   if (!desc)     return alert('Please enter a description.');
   if (!location) return alert('Please enter a location.');
   if (!date)     return alert('Please select a date.');
   if (!time)     return alert('Please select a start time.');
-  if (!price || price <= 0) return alert('Please enter a valid price.');
-  if (!externalUrl && (!tickets || tickets < 1)) return alert('Please enter the number of tickets (or add an external ticket URL).');
+  if (!promotional) {
+    if (!price || price <= 0) return alert('Please enter a valid price.');
+    if (!externalUrl && (!tickets || tickets < 1)) return alert('Please enter the number of tickets (or add an external ticket URL).');
+  }
   if (!imageBase64 && !existingImage) return alert('Please upload a class image.');
 
   const btn    = document.getElementById('btnPublish');
@@ -911,9 +946,9 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
       body: JSON.stringify({
         ...(editingId ? { id: editingId } : {}),
         title, description: desc, location, date,
-        time: fmtTime(time), duration, price, totalTickets: tickets || 0,
-        badge: badge || null, featured,
-        externalUrl: externalUrl || null,
+        time: fmtTime(time), duration, price: promotional ? 0 : price, totalTickets: promotional ? 0 : (tickets || 0),
+        badge: badge || null, featured, promotional,
+        externalUrl: promotional ? null : (externalUrl || null),
         ...(imageBase64   ? { imageBase64, imageExt }                           : {}),
         ...(editingStripeProductId ? { stripeProductId: editingStripeProductId } : {}),
         ...(editingStripePriceId   ? { stripePriceId:   editingStripePriceId   } : {}),

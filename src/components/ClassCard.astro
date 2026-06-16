@@ -13,6 +13,7 @@ export interface Props {
   totalTickets?: number;
   ticketsSold?: number;
   externalUrl?: string | null;
+  promotional?: boolean;
 }
 
 const {
@@ -29,6 +30,7 @@ const {
   totalTickets = 0,
   ticketsSold  = 0,
   externalUrl  = null,
+  promotional  = false,
 } = Astro.props;
 
 const remaining  = totalTickets > 0 ? totalTickets - ticketsSold : null;
@@ -50,6 +52,7 @@ const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spo
   data-info-remaining={remaining !== null ? String(remaining) : ''}
   data-info-soldout={soldOut ? 'true' : 'false'}
   data-info-external={externalUrl ?? ''}
+  data-info-promotional={promotional ? 'true' : 'false'}
 >
   {displayBadge && <div class="class-card__badge">{displayBadge}</div>}
   <!-- Info button -->
@@ -86,9 +89,13 @@ const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spo
         </div>
       )}
     </div>
-    <div class="class-card__price">{price} <span>/ person</span></div>
+    {!promotional && <div class="class-card__price">{price} <span>/ person</span></div>}
     <div class="class-card__footer">
-      {soldOut ? (
+      {promotional ? (
+        <button class="btn btn--primary btn--full btn-show-info" type="button">
+          More Info
+        </button>
+      ) : soldOut ? (
         <button class="btn btn--primary btn--full" disabled style="opacity:.5;cursor:not-allowed;">Sold Out</button>
       ) : externalUrl ? (
         <a
@@ -110,10 +117,12 @@ const displayBadge = soldOut ? 'Sold Out' : (badge || (lowTickets ? 'Limited Spo
           Get Tickets
         </button>
       )}
-      <span class="stripe-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Secure checkout powered by Stripe
-      </span>
+      {!promotional && (
+        <span class="stripe-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Secure checkout powered by Stripe
+        </span>
+      )}
     </div>
   </div>
 </div>

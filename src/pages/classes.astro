@@ -63,6 +63,7 @@ function fmtClassDate(cls: any) {
               totalTickets={cls.totalTickets}
               ticketsSold={cls.ticketsSold || 0}
               externalUrl={cls.externalUrl || null}
+              promotional={!!cls.promotional}
               delay={`fade-in-delay-${(index % 3) + 1}`}
             />
           ))

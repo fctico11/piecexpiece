@@ -73,6 +73,7 @@ function openDetail(card: HTMLElement) {
   const soldOut     = card.dataset.infoSoldout === 'true';
   const classId     = card.dataset.infoId          ?? '';
   const externalUrl = card.dataset.infoExternal    ?? '';
+  const promotional = card.dataset.infoPromotional === 'true';
 
   // Image
   const img = document.getElementById('cdImage') as HTMLImageElement;
@@ -90,7 +91,12 @@ function openDetail(card: HTMLElement) {
 
   // Text
   (document.getElementById('cdTitle') as HTMLElement).textContent = title;
-  (document.getElementById('cdPrice') as HTMLElement).textContent = price + ' / person';
+  const priceEl = document.getElementById('cdPrice') as HTMLElement;
+  if (promotional) {
+    priceEl.textContent = 'Promotional';
+  } else {
+    priceEl.textContent = price + ' / person';
+  }
   (document.getElementById('cdDescription') as HTMLElement).textContent = description;
 
   // Meta chips
@@ -133,7 +139,13 @@ function openDetail(card: HTMLElement) {
 
   // CTA
   const cta = document.getElementById('cdCTA') as HTMLElement;
-  if (soldOut) {
+  if (promotional) {
+    cta.innerHTML = `
+      <button id="cdPromoClose"
+        style="background:var(--color-primary);color:white;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;flex:1;transition:background 0.2s;">
+        Got It
+      </button>`;
+  } else if (soldOut) {
     cta.innerHTML = `<button disabled style="background:#e5e7eb;color:#9ca3af;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:not-allowed;flex:1;">Sold Out</button>`;
   } else if (externalUrl) {
     cta.innerHTML = `
@@ -161,6 +173,7 @@ function closeDetail() {
 
 document.getElementById('classDetailClose')!.addEventListener('click', closeDetail);
 modal.addEventListener('click', (e) => { if (e.target === modal) closeDetail(); });
+modal.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#cdPromoClose')) closeDetail(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
 // Info button clicks

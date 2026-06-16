@@ -68,6 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
     badge?: string;
     featured: boolean;
     externalUrl?: string | null;
+    promotional?: boolean;
     imageBase64?: string;
     imageExt?: string;
     stripeProductId?: string;
@@ -89,12 +90,14 @@ export const POST: APIRoute = async ({ request }) => {
     'Content-Type': 'application/json',
   };
 
-  const isExternal = !!body.externalUrl;
+  const isPromotional = !!body.promotional;
+  const isExternal = !isPromotional && !!body.externalUrl;
+  const skipStripe = isExternal || isPromotional;
   const stripeKey  = import.meta.env.STRIPE_SECRET_KEY;
-  if (!isExternal && !stripeKey) {
+  if (!skipStripe && !stripeKey) {
     return new Response(JSON.stringify({ error: 'STRIPE_SECRET_KEY not set' }), { status: 500 });
   }
-  const stripe = isExternal ? null : new Stripe(stripeKey!, { apiVersion: '2025-02-24.acacia' });
+  const stripe = skipStripe ? null : new Stripe(stripeKey!, { apiVersion: '2025-02-24.acacia' });
 
   const isEdit   = !!body.id;
   const classId  = body.id || slugify(body.title, body.date);
@@ -120,7 +123,7 @@ export const POST: APIRoute = async ({ request }) => {
     let stripeProductId = body.stripeProductId;
     let stripePriceId   = body.stripePriceId;
 
-    if (!isExternal && stripe) {
+    if (!skipStripe && stripe) {
       const priceInCents = Math.round(body.price * 100);
       const metadata = {
         location:     body.location,
@@ -183,15 +186,16 @@ export const POST: APIRoute = async ({ request }) => {
       date:           body.date,
       time:           body.time,
       duration:       body.duration,
-      price:          body.price,
-      totalTickets:   body.totalTickets,
+      price:          body.price || 0,
+      totalTickets:   body.totalTickets || 0,
       ticketsSold:    0,
       badge:          body.badge || null,
       featured:       body.featured,
-      externalUrl:    body.externalUrl || null,
+      externalUrl:    isPromotional ? null : (body.externalUrl || null),
+      promotional:    isPromotional,
       image:          body.imageBase64 ? imageUrl : (data.classes.find(c => c.id === classId)?.image || imageUrl),
-      stripeProductId: isExternal ? null : stripeProductId,
-      stripePriceId:   isExternal ? null : stripePriceId,
+      stripeProductId: skipStripe ? null : stripeProductId,
+      stripePriceId:   skipStripe ? null : stripePriceId,
     };
 
     if (isEdit) {
