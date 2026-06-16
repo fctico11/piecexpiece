@@ -12,7 +12,7 @@
       "totalTickets": 15,
       "ticketsSold": 0,
       "badge": "ART SHOW",
-      "featured": true,
+      "featured": false,
       "image": "/images/classes/pop-up-mini-mosaic-workshop-20260613.jpg",
       "stripeProductId": "prod_UfRvHELlcwQq4O",
       "stripePriceId": "price_1Tg71GROLHqxegkZwTL0HopH"
