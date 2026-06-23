@@ -53,25 +53,6 @@
       "image": "/images/classes/pop-up-mosaic-workshop-20260715.jpg",
       "stripeProductId": null,
       "stripePriceId": null
-    },
-    {
-      "id": "broken-plates-20260720",
-      "title": "Broken plates!",
-      "description": "Together, let's learn how to break ceramic plates and transform them into something beautiful! Through this hands-on mosaic workshop, you'll discover how to safely cut, shape, and arrange ceramic pieces, then put them back together piece by piece to create a unique work of art.\nWe'll guide you through each step of the process, from choosing your design and color palette to placing and securing each piece. No prior experience is needed—this workshop is perfect for beginners as well as those looking to explore their creativity in a fun and relaxing environment.\nAll materials are included, and by the end of the session you'll have a beautiful handmade mosaic to proudly display or give as a gift. Join us for a creative experience where broken pieces come together to create something truly special and take your finished project home the very same day!",
-      "location": "Six Points Pub 574 Bloomfield Avenue Bloomfield, NJ",
-      "date": "2026-07-20",
-      "time": "7:00 PM",
-      "duration": "2.5 hours",
-      "price": 55,
-      "totalTickets": 16,
-      "ticketsSold": 0,
-      "badge": null,
-      "featured": true,
-      "externalUrl": null,
-      "promotional": false,
-      "image": "/images/classes/broken-plates-20260720.jpg",
-      "stripeProductId": "prod_UknZ4unhiS4zjz",
-      "stripePriceId": "price_1TlHy0BNynaUx0jlSU09E7fw"
     }
   ]
 }
