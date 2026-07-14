@@ -1,0 +1,113 @@
+---
+// ProductDetailModal.astro — populated dynamically from product card data attributes
+---
+
+<div id="productDetailModal" style="display:none; position:fixed; inset:0; z-index:2800; background:rgba(10,20,40,0.72); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:20px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 32px 80px rgba(0,0,0,0.35);">
+
+    <div style="position:sticky;top:0;z-index:10;height:0;overflow:visible;display:flex;justify-content:flex-end;padding:12px 12px 0 0;">
+      <button id="productDetailClose" style="width:38px;height:38px;border-radius:50%;border:3px solid white;background:var(--color-turquoise);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;box-shadow:0 3px 12px rgba(26,58,92,0.3);flex-shrink:0;">×</button>
+    </div>
+
+    <div style="position:relative; border-radius:20px 20px 0 0; overflow:hidden; background:#f5f0ea;">
+      <img id="pdImage" src="" alt="" style="width:100%;display:block;object-fit:contain;max-height:460px;" />
+      <div id="pdBadge" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.9);color:#1a3a5c;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:100px;"></div>
+    </div>
+
+    <div style="padding:28px 28px 32px;">
+      <h2 id="pdTitle" style="font-size:1.6rem;color:var(--color-primary);margin:0 0 8px;line-height:1.2;"></h2>
+      <div id="pdPrice" style="font-size:1.2rem;font-weight:700;color:var(--color-turquoise);margin-bottom:18px;"></div>
+      <div id="pdMeta" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;"></div>
+      <p id="pdDescription" style="color:#4a5568;line-height:1.7;font-size:0.95rem;margin:0 0 20px;"></p>
+      <div id="pdStock" style="margin-bottom:24px;"></div>
+      <div id="pdCTA" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const modal = document.getElementById('productDetailModal') as HTMLElement;
+
+function openProductDetail(card: HTMLElement) {
+  const title       = card.dataset.productTitle       ?? '';
+  const description = card.dataset.productDescription ?? '';
+  const price       = card.dataset.productPrice       ?? '';
+  const image       = card.dataset.productImage       ?? '';
+  const category    = card.dataset.productCategory    ?? '';
+  const dimensions  = card.dataset.productDimensions  ?? '';
+  const remaining   = Number(card.dataset.productRemaining ?? '0');
+  const productId   = card.dataset.productId          ?? '';
+  const soldOut     = remaining <= 0;
+
+  const img = document.getElementById('pdImage') as HTMLImageElement;
+  img.src = image; img.alt = title;
+
+  const badge = document.getElementById('pdBadge') as HTMLElement;
+  if (soldOut) {
+    badge.textContent = 'Sold'; badge.style.display = '';
+  } else if (remaining === 1) {
+    badge.textContent = 'One of a Kind'; badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  (document.getElementById('pdTitle') as HTMLElement).textContent = title;
+  (document.getElementById('pdPrice') as HTMLElement).textContent = `$${price}`;
+  (document.getElementById('pdDescription') as HTMLElement).textContent = description;
+
+  const meta = document.getElementById('pdMeta') as HTMLElement;
+  meta.innerHTML = '';
+  const chip = (label: string, text: string) => `
+    <div style="display:flex;align-items:center;gap:6px;background:#f5f0ea;border-radius:100px;padding:6px 12px;font-size:0.8rem;color:var(--color-primary);font-weight:500;">
+      <span style="color:var(--color-turquoise);font-weight:700;">${label}</span><span>${text}</span>
+    </div>`;
+  if (dimensions) meta.innerHTML += chip('Size', dimensions);
+  if (category)   meta.innerHTML += chip('Type', category);
+
+  const stock = document.getElementById('pdStock') as HTMLElement;
+  if (!soldOut && remaining <= 3) {
+    stock.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#e2725b;font-weight:600;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      ${remaining === 1 ? 'One of a kind — only 1 available' : `Only ${remaining} available`}
+    </div>`;
+  } else {
+    stock.innerHTML = '';
+  }
+
+  const cta = document.getElementById('pdCTA') as HTMLElement;
+  if (soldOut) {
+    cta.innerHTML = `<button disabled style="background:#e5e7eb;color:#9ca3af;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:not-allowed;flex:1;">Sold</button>`;
+  } else {
+    cta.innerHTML = `
+      <button id="pdAddBtn"
+        style="background:var(--color-primary);color:white;padding:14px 28px;border-radius:100px;border:none;font-weight:600;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;flex:1;transition:background 0.2s;">
+        Add to Cart
+      </button>`;
+    (document.getElementById('pdAddBtn') as HTMLElement).addEventListener('click', () => {
+      closeProductDetail();
+      (window as any).pxpCart?.add(productId);
+      (window as any).pxpCart?.open();
+    });
+  }
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProductDetail() {
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('productDetailClose')!.addEventListener('click', closeProductDetail);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeProductDetail(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') closeProductDetail(); });
+
+document.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.btn-show-product');
+  if (!btn) return;
+  e.stopPropagation();
+  const card = btn.closest('[data-product-id]') as HTMLElement;
+  if (card) openProductDetail(card);
+});
+</script>

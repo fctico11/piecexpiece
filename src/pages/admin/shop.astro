@@ -1,0 +1,735 @@
+---
+export const prerender = false;
+import { createHash } from 'crypto';
+import shopData from '../../data/products.json';
+
+// ── Auth ────────────────────────────────────────────────────────────────────
+const password = import.meta.env.ADMIN_PASSWORD ?? '';
+const expectedCookie = password
+  ? createHash('sha256').update(password + ':pxp-editor').digest('hex')
+  : null;
+const cookie = Astro.request.headers.get('cookie') ?? '';
+const match  = cookie.match(/(?:^|;\s*)pxp_auth=([^;]+)/);
+const isAuth = expectedCookie && match?.[1] === expectedCookie;
+if (!isAuth) return Astro.redirect('/admin');
+
+const products = (shopData.products as any[]);
+const settings = shopData.settings as any;
+const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).length;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shop — Piece x Piece Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f5f0ea;
+      color: #1a3a5c;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ── Topbar ──────────────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100; height: 52px;
+      background: #1a1f2e;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; padding: 0 16px;
+    }
+    .topbar__brand {
+      font-size: 0.88rem; font-weight: 700;
+      color: #5fb8b0; white-space: nowrap; letter-spacing: 0.03em;
+    }
+    .topbar__sep { width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 10px; }
+    .topbar__nav { display: flex; height: 100%; }
+    .topbar__nav a {
+      display: flex; align-items: center; height: 100%; padding: 0 16px;
+      font-size: 0.82rem; font-weight: 600; color: #64748b; text-decoration: none;
+      border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+    }
+    .topbar__nav a:hover { color: #e2e8f0; }
+    .topbar__nav a.active { color: #e2e8f0; border-bottom-color: #e2e8f0; }
+
+    /* ── Page ────────────────────────────────────────────────────────────── */
+    .page { max-width: 880px; margin: 0 auto; padding: 36px 24px 100px; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 18px; background: #1a3a5c; color: #fff; border: none;
+      border-radius: 8px; font: 600 0.85rem 'Inter',sans-serif; cursor: pointer;
+      transition: background .2s; white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(26,58,92,0.2);
+    }
+    .btn-primary:hover { background: #2a5a8c; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18); border-radius: 6px;
+      font: 500 0.78rem 'Inter',sans-serif; cursor: pointer; color: #7a8fa6;
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn-ghost:hover { border-color: #1a3a5c; color: #1a3a5c; background: #f5f0ea; }
+    .btn-ghost.danger:hover { border-color: #c85a46; color: #c85a46; background: rgba(200,90,70,.05); }
+
+    .btn-cancel {
+      padding: 10px 20px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18); border-radius: 8px;
+      font: 500 0.85rem 'Inter',sans-serif; cursor: pointer; color: #7a8fa6;
+      transition: all .15s;
+    }
+    .btn-cancel:hover { border-color: #1a3a5c; color: #1a3a5c; }
+
+    .btn-publish {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; background: #3da89e; color: #fff; border: none;
+      border-radius: 8px; font: 600 0.85rem 'Inter',sans-serif; cursor: pointer;
+      transition: background .2s, opacity .2s;
+      box-shadow: 0 2px 8px rgba(61,168,158,0.3);
+    }
+    .btn-publish:hover:not(:disabled) { background: #5fb8b0; }
+    .btn-publish:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Section headers ─────────────────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; gap: 12px;
+    }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #7a8fa6;
+    }
+    .section-badge {
+      font-size: 0.7rem; font-weight: 600; padding: 2px 9px;
+      border-radius: 20px; background: rgba(61,168,158,.1); color: #3da89e;
+      border: 1px solid rgba(61,168,158,.25);
+    }
+
+    /* ── Shipping settings card ──────────────────────────────────────────── */
+    .ship-card {
+      background: #fff; border: 1px solid rgba(26,58,92,0.12);
+      border-radius: 12px; padding: 18px 20px; margin-bottom: 36px;
+      box-shadow: 0 2px 12px rgba(26,58,92,0.06);
+    }
+    .ship-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+    .ship-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+    .ship-saved { font-size: 0.78rem; color: #2a7d75; display: none; }
+
+    /* ── Product list ────────────────────────────────────────────────────── */
+    .product-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
+    .product-row {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border: 1px solid rgba(26,58,92,0.1);
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 1px 6px rgba(26,58,92,0.05);
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .product-row:hover {
+      border-color: rgba(26,58,92,0.2);
+      box-shadow: 0 3px 16px rgba(26,58,92,0.09);
+    }
+    .product-row__img {
+      width: 68px; height: 68px; border-radius: 8px; object-fit: cover;
+      flex-shrink: 0; background: #f0ebe3;
+    }
+    .product-row__body { flex: 1; min-width: 0; }
+    .product-row__title {
+      font-weight: 600; font-size: 0.9rem; color: #1a3a5c;
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .product-row__meta { font-size: 0.75rem; color: #7a8fa6; display: flex; flex-wrap: wrap; gap: 10px; }
+    .product-row__actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+
+    .pill {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    .pill--red   { background: rgba(200,90,70,.09);  color: #c85a46; border: 1px solid rgba(200,90,70,.2); }
+    .pill--teal  { background: rgba(61,168,158,.09); color: #3da89e; border: 1px solid rgba(61,168,158,.25); }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 64px 24px;
+      background: rgba(240,235,227,0.5);
+      border: 1.5px dashed rgba(26,58,92,0.15);
+      border-radius: 14px; margin-bottom: 36px;
+    }
+    .empty-state p { color: #7a8fa6; margin-bottom: 20px; font-size: 0.88rem; line-height: 1.7; }
+
+    /* ── List topbar ─────────────────────────────────────────────────────── */
+    .list-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .list-topbar h1 { font-size: 1.35rem; font-weight: 700; color: #1a3a5c; }
+    .list-topbar p  { font-size: 0.78rem; color: #7a8fa6; margin-top: 3px; }
+
+    /* ── Toast ───────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #fff; border-radius: 10px;
+      padding: 12px 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(26,58,92,0.18); z-index: 9999;
+      opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; pointer-events: all; }
+    .toast.success { border: 1px solid rgba(61,168,158,.35); color: #2a7d75; }
+    .toast.error   { border: 1px solid rgba(200,90,70,.35);  color: #c85a46; }
+    .toast.loading { border: 1px solid rgba(26,58,92,.15);   color: #1a3a5c; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-sm { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+    /* ── Form panel ──────────────────────────────────────────────────────── */
+    #formPanel { display: none; }
+
+    .form-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; color: #7a8fa6; cursor: pointer;
+      background: none; border: none; margin-bottom: 24px; padding: 0;
+      transition: color .15s;
+    }
+    .form-back:hover { color: #1a3a5c; }
+
+    .form-title { font-size: 1.2rem; font-weight: 700; color: #1a3a5c; margin-bottom: 28px; }
+    .form-section { margin-bottom: 28px; }
+    .form-section-label {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #7a8fa6; margin-bottom: 14px;
+    }
+    .form-divider { height: 1px; background: rgba(26,58,92,0.08); margin: 28px 0; }
+
+    /* Image upload */
+    .img-drop {
+      border: 2px dashed rgba(26,58,92,0.18); border-radius: 12px; padding: 40px 24px;
+      text-align: center; cursor: pointer; background: rgba(240,235,227,0.4);
+      transition: border-color .2s, background .2s; position: relative;
+    }
+    .img-drop:hover, .img-drop.drag-over {
+      border-color: #3da89e; background: rgba(61,168,158,.05);
+    }
+    .img-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .img-drop__icon { color: rgba(26,58,92,0.25); margin-bottom: 12px; }
+    .img-drop__label { font-size: 0.88rem; color: #7a8fa6; }
+    .img-drop__label strong { color: #3da89e; }
+    .img-drop__hint { font-size: 0.72rem; color: #b0bec8; margin-top: 4px; }
+
+    .img-preview-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-img-action {
+      flex: 1; padding: 9px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.15);
+      border-radius: 8px; color: #7a8fa6; font: 500 0.82rem 'Inter',sans-serif;
+      cursor: pointer; text-align: center; transition: all .15s; position: relative;
+    }
+    .btn-img-action input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .btn-img-action:hover { border-color: #3da89e; color: #3da89e; background: rgba(61,168,158,.04); }
+    .btn-img-action.remove:hover { border-color: #c85a46; color: #c85a46; background: rgba(200,90,70,.04); }
+
+    /* Form fields */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      font-size: 0.73rem; font-weight: 600; color: #7a8fa6;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .field label .opt { color: #b0bec8; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .field input, .field textarea, .field select {
+      padding: 10px 12px; background: #fff;
+      border: 1px solid rgba(26,58,92,0.18);
+      border-radius: 8px; color: #1a3a5c; font: 0.9rem 'Inter',sans-serif;
+      outline: none; transition: border-color .2s, box-shadow .2s; width: 100%;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: #b0bec8; }
+    .field input:focus, .field textarea:focus {
+      border-color: #3da89e;
+      box-shadow: 0 0 0 3px rgba(61,168,158,0.12);
+    }
+    .field textarea { resize: vertical; min-height: 96px; line-height: 1.65; }
+    .input-pfx { position: relative; }
+    .input-pfx span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #b0bec8; pointer-events: none; }
+    .input-pfx input { padding-left: 22px; }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px;
+      background: rgba(240,235,227,0.5); border-radius: 10px;
+      border: 1px solid rgba(26,58,92,0.08);
+    }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; margin-top: 1px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle__track {
+      position: absolute; inset: 0; background: #d8d0c8;
+      border-radius: 22px; cursor: pointer; transition: background .2s;
+    }
+    .toggle__track::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+      transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .toggle input:checked + .toggle__track { background: #3da89e; }
+    .toggle input:checked + .toggle__track::before { transform: translateX(18px); }
+    .toggle-info .toggle-label { font-size: 0.9rem; color: #1a3a5c; font-weight: 600; }
+    .toggle-info .toggle-sub  { font-size: 0.75rem; color: #7a8fa6; margin-top: 3px; }
+
+    /* Status */
+    .form-status { display: none; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px; font-size: 0.83rem; margin-top: 16px; }
+    .form-status.loading { display: flex; background: rgba(26,58,92,.05);  border: 1px solid rgba(26,58,92,.15);  color: #1a3a5c; }
+    .form-status.success { display: flex; background: rgba(61,168,158,.08); border: 1px solid rgba(61,168,158,.25); color: #2a7d75; }
+    .form-status.error   { display: flex; background: rgba(200,90,70,.07);  border: 1px solid rgba(200,90,70,.25);  color: #c85a46; }
+    .spinner-md { width: 16px; height: 16px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+    .form-actions {
+      display: flex; gap: 12px; justify-content: flex-end;
+      padding-top: 20px; border-top: 1px solid rgba(26,58,92,0.08); margin-top: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 20px 16px 80px; }
+      .list-topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .list-topbar h1 { font-size: 1.15rem; }
+      .btn-primary { width: 100%; justify-content: center; }
+      .ship-grid { grid-template-columns: 1fr; }
+      .product-list { gap: 8px; margin-bottom: 24px; }
+      .product-row { flex-wrap: wrap; gap: 10px; padding: 12px; }
+      .product-row__img { width: 52px; height: 52px; border-radius: 6px; }
+      .product-row__title { font-size: 0.85rem; }
+      .product-row__meta  { font-size: 0.72rem; gap: 6px; }
+      .product-row__actions {
+        flex-direction: row; flex-wrap: wrap;
+        width: 100%; border-top: 1px solid rgba(26,58,92,0.07);
+        padding-top: 10px; gap: 6px;
+      }
+      .product-row__actions .btn-ghost { flex: 1; justify-content: center; font-size: 0.75rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-actions { flex-direction: column-reverse; }
+      .btn-publish, .btn-cancel { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar__brand">✦ Piece x Piece</span>
+  <div class="topbar__sep"></div>
+  <nav class="topbar__nav">
+    <a href="/admin/classes">Classes</a>
+    <a href="/admin/shop" class="active">Shop</a>
+    <a href="/admin">Theme Editor</a>
+  </nav>
+</div>
+
+<!-- ── LIST PANEL ──────────────────────────────────────────────────────── -->
+<div class="page" id="listPanel">
+
+  <div class="list-topbar">
+    <div>
+      <h1>Shop Items</h1>
+      <p>Changes go live ~30–60 seconds after publishing</p>
+    </div>
+    <button class="btn-primary" id="btnNew">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Item
+    </button>
+  </div>
+
+  <!-- Shipping settings -->
+  <div class="section-header">
+    <span class="section-title">Shipping</span>
+  </div>
+  <div class="ship-card">
+    <div class="ship-grid">
+      <div class="field">
+        <label>Flat Shipping Rate (per order)</label>
+        <div class="input-pfx"><span>$</span><input type="number" id="sFlat" min="0" step="0.01" value={(settings.flatShippingCents / 100).toFixed(2)} /></div>
+      </div>
+      <div class="field">
+        <label>Free Shipping Over <span class="opt">(optional — leave blank for none)</span></label>
+        <div class="input-pfx"><span>$</span><input type="number" id="sFreeOver" min="0" step="1" value={settings.freeShippingThresholdCents != null ? String(settings.freeShippingThresholdCents / 100) : ''} placeholder="e.g. 150" /></div>
+      </div>
+    </div>
+    <div class="toggle-row" style="margin-bottom:14px;">
+      <label class="toggle">
+        <input type="checkbox" id="sPickup" checked={settings.localPickupEnabled} />
+        <span class="toggle__track"></span>
+      </label>
+      <div class="toggle-info">
+        <div class="toggle-label">Offer free local pickup</div>
+        <div class="toggle-sub">Adds a "Local pickup" option at checkout. You'll email the buyer to arrange a time and place.</div>
+      </div>
+    </div>
+    <div class="ship-actions">
+      <span class="ship-saved" id="shipSaved">✓ Saved</span>
+      <button class="btn-publish" id="btnSaveShipping">Save Shipping Settings</button>
+    </div>
+  </div>
+
+  <!-- All items -->
+  <div class="section-header" style="margin-top:8px;">
+    <span class="section-title">All Items ({products.length})</span>
+    <span class="section-badge">{availableCount} available</span>
+  </div>
+
+  {products.length === 0 ? (
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2d3548" stroke-width="1.5" style="margin:0 auto 16px"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <p>No shop items yet.<br>Add your first piece and it'll appear here and on the website's Shop page.</p>
+      <button class="btn-primary" id="btnNewEmpty">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add First Item
+      </button>
+    </div>
+  ) : (
+    <div class="product-list">
+      {products.map(p => {
+        const sold = p.sold || 0;
+        const rem  = p.quantity - sold;
+        return (
+          <div class="product-row" data-id={p.id}>
+            <img class="product-row__img" src={p.image} alt={p.title} />
+            <div class="product-row__body">
+              <div class="product-row__title">{p.title}</div>
+              <div class="product-row__meta">
+                <span>${p.price}</span>
+                <span>{rem} of {p.quantity} in stock{sold > 0 ? ` · ${sold} sold` : ''}</span>
+                {p.category && <span>{p.category}</span>}
+                {rem === 0 && <span class="pill pill--red">Sold Out</span>}
+                {rem > 0 && rem <= 2 && <span class="pill pill--teal">Low Stock</span>}
+              </div>
+            </div>
+            <div class="product-row__actions">
+              <button class="btn-ghost" data-edit={JSON.stringify(p)}>Edit</button>
+              <button class="btn-ghost danger" data-delete-id={p.id} data-delete-title={p.title}>Delete</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<!-- ── FORM PANEL ──────────────────────────────────────────────────────── -->
+<div class="page" id="formPanel">
+  <button class="form-back" id="btnBack">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Shop Items
+  </button>
+
+  <div class="form-title" id="formTitle">New Item</div>
+
+  <!-- Image -->
+  <div class="form-section">
+    <div class="form-section-label">Item Photo</div>
+    <div class="img-upload-area">
+      <div id="imgDrop" class="img-drop">
+        <input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp" />
+        <div class="img-drop__icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="img-drop__label"><strong>Click to upload</strong> or drag & drop</div>
+        <div class="img-drop__hint">JPG, PNG, WebP — auto-compressed for web. Square photos look best.</div>
+      </div>
+
+      <div id="imgPreview" style="display:none;">
+        <img id="imgPreviewEl" src="" alt="Preview" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;display:block;" />
+        <div class="img-preview-actions">
+          <label class="btn-img-action">
+            <input type="file" id="imgFileReplace" accept="image/jpeg,image/png,image/webp" />
+            📷 Change Photo
+          </label>
+          <button class="btn-img-action remove" id="btnRemoveImg" type="button">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <!-- Details -->
+  <div class="form-section">
+    <div class="form-section-label">Item Details</div>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Item Name <span style="color:#e2725b">*</span></label>
+        <input type="text" id="fTitle" placeholder="e.g. Bluebird Suncatcher Mosaic" />
+      </div>
+      <div class="field full">
+        <label>Description <span style="color:#e2725b">*</span></label>
+        <textarea id="fDesc" placeholder="What is it? What's it made of? What makes it special?"></textarea>
+      </div>
+      <div class="field">
+        <label>Price (USD) <span style="color:#e2725b">*</span></label>
+        <div class="input-pfx"><span>$</span><input type="number" id="fPrice" placeholder="85" min="1" step="0.01" /></div>
+      </div>
+      <div class="field">
+        <label>Quantity Available <span style="color:#e2725b">*</span></label>
+        <input type="number" id="fQuantity" placeholder="1" min="1" step="1" value="1" />
+      </div>
+      <div class="field">
+        <label>Size / Dimensions <span class="opt">(optional)</span></label>
+        <input type="text" id="fDimensions" placeholder={'e.g. 8" x 10"'} />
+      </div>
+      <div class="field">
+        <label>Category <span class="opt">(optional — e.g. "Mosaics", "Home")</span></label>
+        <input type="text" id="fCategory" placeholder="Leave blank for none" />
+      </div>
+      <div class="field full">
+        <label>Badge <span class="opt">(optional — e.g. "New", "One of a Kind")</span></label>
+        <input type="text" id="fBadge" placeholder="Leave blank for none" />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-status" id="formStatus"></div>
+
+  <div class="form-actions">
+    <button class="btn-cancel" id="btnCancelForm">Cancel</button>
+    <button class="btn-publish" id="btnPublish">
+      <span id="btnPublishLabel">Publish Item</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let editingId = null;
+let existingImage = null, imageBase64 = null, imageExt = null;
+
+const listPanel = document.getElementById('listPanel');
+const formPanel = document.getElementById('formPanel');
+
+// ── Panel switching ────────────────────────────────────────────────────────
+function showList() {
+  listPanel.style.display = 'block';
+  formPanel.style.display = 'none';
+  clearForm();
+}
+function showForm(title = 'New Item') {
+  listPanel.style.display = 'none';
+  formPanel.style.display = 'block';
+  document.getElementById('formTitle').textContent = title;
+  document.getElementById('formStatus').className = 'form-status';
+  window.scrollTo({ top: 0 });
+}
+
+document.getElementById('btnNew').addEventListener('click',       () => showForm('New Item'));
+document.getElementById('btnNewEmpty')?.addEventListener('click', () => showForm('New Item'));
+document.getElementById('btnBack').addEventListener('click',      showList);
+document.getElementById('btnCancelForm').addEventListener('click', showList);
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type} visible`;
+  t.innerHTML = type === 'loading'
+    ? `<div class="spinner-sm"></div> ${msg}`
+    : msg;
+  clearTimeout(toastTimer);
+  if (type !== 'loading') toastTimer = setTimeout(() => t.classList.remove('visible'), 4000);
+}
+
+// ── Image handling ─────────────────────────────────────────────────────────
+function compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1400;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        c.toBlob(blob => {
+          const fr = new FileReader();
+          fr.onload = ev => resolve({ base64: ev.target.result.split(',')[1], ext: 'jpg' });
+          fr.readAsDataURL(blob);
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function setImage(file) {
+  if (!file) return;
+  const result = await compressImage(file);
+  imageBase64 = result.base64; imageExt = result.ext;
+  document.getElementById('imgPreviewEl').src = `data:image/jpeg;base64,${result.base64}`;
+  document.getElementById('imgDrop').style.display = 'none';
+  document.getElementById('imgPreview').style.display = 'block';
+}
+
+function clearImage() {
+  imageBase64 = null; imageExt = null; existingImage = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgDrop').style.display = '';
+  document.getElementById('imgFile').value = '';
+  document.getElementById('imgFileReplace').value = '';
+  document.getElementById('imgPreviewEl').src = '';
+}
+
+document.getElementById('imgFile').addEventListener('change',        e => setImage(e.target.files[0]));
+document.getElementById('imgFileReplace').addEventListener('change', e => setImage(e.target.files[0]));
+document.getElementById('btnRemoveImg').addEventListener('click',    clearImage);
+
+const imgDrop = document.getElementById('imgDrop');
+imgDrop.addEventListener('dragover',  e => { e.preventDefault(); imgDrop.classList.add('drag-over'); });
+imgDrop.addEventListener('dragleave', ()  => imgDrop.classList.remove('drag-over'));
+imgDrop.addEventListener('drop',      e  => { e.preventDefault(); imgDrop.classList.remove('drag-over'); setImage(e.dataTransfer.files[0]); });
+
+// ── Clear form ─────────────────────────────────────────────────────────────
+function clearForm() {
+  editingId = null;
+  clearImage();
+  ['fTitle','fDesc','fPrice','fDimensions','fCategory','fBadge'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fQuantity').value = '1';
+}
+
+// ── Edit ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-edit]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = JSON.parse(btn.dataset.edit);
+    editingId     = p.id;
+    existingImage = p.image || null;
+    imageBase64 = null; imageExt = null;
+
+    document.getElementById('fTitle').value      = p.title       || '';
+    document.getElementById('fDesc').value       = p.description || '';
+    document.getElementById('fPrice').value      = p.price       || '';
+    document.getElementById('fQuantity').value   = p.quantity    || 1;
+    document.getElementById('fDimensions').value = p.dimensions  || '';
+    document.getElementById('fCategory').value   = p.category    || '';
+    document.getElementById('fBadge').value      = p.badge       || '';
+
+    if (p.image) {
+      document.getElementById('imgPreviewEl').src = p.image;
+      document.getElementById('imgPreview').style.display = 'block';
+      document.getElementById('imgDrop').style.display = 'none';
+    } else {
+      clearImage();
+    }
+    showForm('Edit Item');
+  });
+});
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-delete-id]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id    = btn.dataset.deleteId;
+    const title = btn.dataset.deleteTitle;
+    if (!confirm(`Delete "${title}"?\n\nThis removes it from the shop. Stripe payment records are preserved.`)) return;
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      const res = await fetch('/api/shop/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: id }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      showToast('Item deleted. Site updating…', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      showToast('✗ ' + err.message, 'error');
+      btn.disabled = false; btn.textContent = 'Delete';
+    }
+  });
+});
+
+// ── Shipping settings ──────────────────────────────────────────────────────
+document.getElementById('btnSaveShipping').addEventListener('click', async () => {
+  const btn = document.getElementById('btnSaveShipping');
+  const flat = parseFloat(document.getElementById('sFlat').value);
+  const freeOverRaw = document.getElementById('sFreeOver').value;
+  const freeOver = freeOverRaw === '' ? null : parseFloat(freeOverRaw);
+  const pickup = document.getElementById('sPickup').checked;
+
+  if (isNaN(flat) || flat < 0) return alert('Please enter a valid flat shipping rate.');
+
+  btn.disabled = true;
+  showToast('Saving shipping settings…', 'loading');
+  try {
+    const res = await fetch('/api/shop/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flatShipping: flat, freeShippingOver: freeOver, localPickupEnabled: pickup }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+    showToast('✓ Shipping settings saved. Site updating…', 'success');
+    document.getElementById('shipSaved').style.display = 'inline';
+    setTimeout(() => { document.getElementById('shipSaved').style.display = 'none'; }, 4000);
+  } catch (err) {
+    showToast('✗ ' + err.message, 'error');
+  }
+  btn.disabled = false;
+});
+
+// ── Publish ────────────────────────────────────────────────────────────────
+document.getElementById('btnPublish').addEventListener('click', async () => {
+  const title      = document.getElementById('fTitle').value.trim();
+  const desc       = document.getElementById('fDesc').value.trim();
+  const price      = parseFloat(document.getElementById('fPrice').value);
+  const quantity   = parseInt(document.getElementById('fQuantity').value);
+  const dimensions = document.getElementById('fDimensions').value.trim();
+  const category   = document.getElementById('fCategory').value.trim();
+  const badge      = document.getElementById('fBadge').value.trim();
+
+  if (!title)                    return alert('Please enter an item name.');
+  if (!desc)                     return alert('Please enter a description.');
+  if (!price || price <= 0)      return alert('Please enter a valid price.');
+  if (!quantity || quantity < 1) return alert('Please enter the quantity available (1 for one-of-a-kind pieces).');
+  if (!imageBase64 && !existingImage) return alert('Please upload a photo of the item.');
+
+  const btn    = document.getElementById('btnPublish');
+  const status = document.getElementById('formStatus');
+  btn.disabled = true;
+  status.className = 'form-status loading';
+  status.innerHTML = '<div class="spinner-md"></div> Publishing — uploading photo and saving item…';
+
+  try {
+    const res = await fetch('/api/shop/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(editingId ? { id: editingId } : {}),
+        title, description: desc, price, quantity,
+        dimensions: dimensions || null,
+        category: category || null,
+        badge: badge || null,
+        ...(imageBase64 ? { imageBase64, imageExt } : {}),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Publish failed');
+
+    status.className = 'form-status success';
+    status.innerHTML = `✓ ${editingId ? 'Updated' : 'Published'}! Site will update in ~30–60 seconds.`;
+    setTimeout(() => location.reload(), 2500);
+  } catch (err) {
+    status.className = 'form-status error';
+    status.innerHTML = '✗ ' + err.message;
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>

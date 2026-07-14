@@ -12,6 +12,7 @@ const pathname = Astro.url.pathname;
     <div class="navbar__links" id="nav-links">
       <a href="/" class={pathname === "/" ? "active" : ""}>Home</a>
       <a href="/classes" class={pathname === "/classes" ? "active" : ""}>Classes</a>
+      <a href="/shop" class={pathname === "/shop" ? "active" : ""}>Shop</a>
       <a href="/about" class={pathname === "/about" ? "active" : ""}>About</a>
       <a href="/gallery" class={pathname === "/gallery" ? "active" : ""}>Gallery</a>
       <a href="/contact" class={pathname === "/contact" ? "active" : ""}>Contact</a>
@@ -27,6 +28,7 @@ const pathname = Astro.url.pathname;
 <div class="mobile-nav" id="mobile-nav">
   <a href="/" class={pathname === "/" ? "active" : ""}>Home</a>
   <a href="/classes" class={pathname === "/classes" ? "active" : ""}>Classes</a>
+  <a href="/shop" class={pathname === "/shop" ? "active" : ""}>Shop</a>
   <a href="/about" class={pathname === "/about" ? "active" : ""}>About</a>
   <a href="/gallery" class={pathname === "/gallery" ? "active" : ""}>Gallery</a>
   <a href="/contact" class={pathname === "/contact" ? "active" : ""}>Contact</a>

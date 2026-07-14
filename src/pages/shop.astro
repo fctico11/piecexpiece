@@ -1,0 +1,91 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import ProductDetailModal from '../components/ProductDetailModal.astro';
+import ShopCart from '../components/ShopCart.astro';
+import CTABanner from '../components/CTABanner.astro';
+import shopData from '../data/products.json';
+
+const title = "Shop Handmade Mosaics — Piece x Piece Mosaics";
+const description = "Shop one-of-a-kind handmade mosaics and art pieces, made piece by piece in our studio. Each piece ships carefully packed, or pick up locally.";
+
+// Read from products.json — published at deploy time when the client adds/edits an item
+const products = (shopData.products as any[]).map(p => ({
+  ...p,
+  remaining: p.quantity - (p.sold || 0),
+}));
+
+// Available pieces first, sold pieces at the end
+products.sort((a, b) => (a.remaining <= 0 ? 1 : 0) - (b.remaining <= 0 ? 1 : 0));
+
+const settings = shopData.settings as any;
+const catalog = products
+  .filter(p => p.remaining > 0)
+  .map(p => ({ id: p.id, title: p.title, price: p.price, image: p.image, remaining: p.remaining }));
+---
+
+<Base title={title} description={description}>
+  <!-- Page Header -->
+  <section class="page-header mosaic-section mosaic-section--light mosaic-clip-1">
+    <div class="container fade-in">
+      <span class="section__label" style="color: var(--color-primary-dark);">Handmade, Piece by Piece</span>
+      <h1>The Shop</h1>
+      <p style="color: var(--color-primary-dark);">Original mosaics and art made in our studio. Every piece is one of a kind — once it finds a home, it's gone for good.</p>
+    </div>
+  </section>
+
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
+  <!-- Product Grid -->
+  <section id="shop-items" class="section mosaic-section mosaic-section--emerald mosaic-clip-2" style="padding-top: 40px;">
+    <div class="container">
+      <div class="section-heading fade-in">
+        <span class="section__label">Available Now</span>
+        <h2>Original Pieces</h2>
+        <p>Each piece ships carefully packed within the US, or choose free local pickup at checkout.</p>
+      </div>
+
+      <div class="classes-grid">
+        {products.length > 0 ? (
+          products.map((p: any, index: number) => (
+            <ProductCard
+              id={p.id}
+              title={p.title}
+              description={p.description}
+              price={p.price}
+              imageSrc={p.image}
+              category={p.category}
+              dimensions={p.dimensions}
+              badge={p.badge}
+              remaining={p.remaining}
+              delay={`fade-in-delay-${(index % 3) + 1}`}
+            />
+          ))
+        ) : (
+          <p style="color:var(--color-text-light);grid-column:1/-1;padding:40px 0;">Nothing in the shop right now — new pieces are always in the works. Check back soon!</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <div class="mosaic-divider"><span></span><span></span><span></span></div>
+
+  <!-- Commission CTA -->
+  <section class="section mosaic-section mosaic-section--sapphire mosaic-clip-3" style="padding-top:40px;padding-bottom:60px;">
+    <div class="container">
+      <CTABanner
+        title="Looking for Something Custom?"
+        description="Have an idea for a custom mosaic — a house number, a portrait, a memorial piece? Tell us what you're dreaming of and we'll make it together."
+        buttonText="Request a Commission"
+        buttonLink="/contact"
+      />
+    </div>
+  </section>
+
+  <ShopCart
+    catalog={catalog}
+    flatShipping={settings.flatShippingCents / 100}
+    freeShippingOver={settings.freeShippingThresholdCents != null ? settings.freeShippingThresholdCents / 100 : null}
+  />
+  <ProductDetailModal />
+</Base>

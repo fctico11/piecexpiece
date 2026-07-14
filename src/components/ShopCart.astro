@@ -1,0 +1,248 @@
+---
+// ShopCart.astro — floating cart button, slide-out cart drawer, and the
+// embedded Stripe checkout modal for shop orders.
+// Exposes window.pxpCart = { add, open } so product cards & modals can hook in.
+export interface Props {
+  catalog: {
+    id: string; title: string; price: number; image: string; remaining: number;
+  }[];
+  flatShipping: number;           // dollars
+  freeShippingOver: number | null; // dollars, or null
+}
+const { catalog, flatShipping, freeShippingOver } = Astro.props;
+const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
+---
+
+<!-- Floating cart button -->
+<button class="cart-fab" id="cartFab" aria-label="Open cart">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+  </svg>
+  <span class="cart-fab__count empty" id="cartCount">0</span>
+</button>
+
+<!-- Cart drawer -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-drawer__head">
+    <div class="cart-drawer__title">Your Cart</div>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">×</button>
+  </div>
+  <div class="cart-drawer__items" id="cartItems"></div>
+  <div class="cart-drawer__foot" id="cartFoot" style="display:none;">
+    <div class="cart-subtotal"><span>Subtotal</span><span id="cartSubtotal">$0</span></div>
+    <div class="cart-ship-note" id="cartShipNote"></div>
+    <button class="btn btn--primary btn--full" id="cartCheckout">Checkout</button>
+    <span class="stripe-note" style="margin-top:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Secure checkout powered by Stripe
+    </span>
+  </div>
+</aside>
+
+<!-- Shop checkout modal (embedded Stripe) -->
+<div id="shopCheckoutModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 24px 64px rgba(0,0,0,0.4);">
+    <div style="padding:20px 24px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0;">
+      <div>
+        <div style="font-weight:700; font-size:1rem; color:#1a1a1a;">Checkout</div>
+        <div style="font-size:0.82rem; color:#666; margin-top:2px;" id="shopCheckoutSubtitle"></div>
+      </div>
+      <button id="shopCheckoutClose" style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#666;flex-shrink:0;">×</button>
+    </div>
+    <div id="shopCheckoutContainer" style="padding:16px 24px 24px;"></div>
+    <div id="shopCheckoutLoading" style="padding:60px 24px; text-align:center; color:#666; font-size:0.9rem;">
+      <div style="width:32px;height:32px;border:2px solid #e0e0e0;border-top-color:#3da89e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
+      Preparing secure checkout…
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
+</div>
+
+<script define:vars={{ catalog, flatShipping, freeShippingOver, stripePublishableKey }}>
+const CART_KEY = 'pxp_cart';
+const byId = Object.fromEntries(catalog.map(p => [p.id, p]));
+
+// ── Cart state (localStorage) ────────────────────────────────────────────────
+function loadCart() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+    // Drop items no longer in the catalog; clamp qty to remaining stock
+    return raw
+      .filter(i => byId[i.id] && byId[i.id].remaining > 0)
+      .map(i => ({ id: i.id, qty: Math.min(Math.max(1, i.qty), byId[i.id].remaining) }));
+  } catch { return []; }
+}
+let cart = loadCart();
+function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const fab       = document.getElementById('cartFab');
+const countEl   = document.getElementById('cartCount');
+const overlay   = document.getElementById('cartOverlay');
+const drawer    = document.getElementById('cartDrawer');
+const itemsEl   = document.getElementById('cartItems');
+const footEl    = document.getElementById('cartFoot');
+const subEl     = document.getElementById('cartSubtotal');
+const shipEl    = document.getElementById('cartShipNote');
+
+const fmt = n => '$' + (Number.isInteger(n) ? n : n.toFixed(2));
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+  countEl.textContent = String(totalQty);
+  countEl.classList.toggle('empty', totalQty === 0);
+
+  if (cart.length === 0) {
+    itemsEl.innerHTML = `<div class="cart-drawer__empty">Your cart is empty.<br>Every piece is handmade — once it's gone, it's gone!</div>`;
+    footEl.style.display = 'none';
+    return;
+  }
+
+  itemsEl.innerHTML = cart.map(i => {
+    const p = byId[i.id];
+    return `
+      <div class="cart-item" data-id="${p.id}">
+        <img class="cart-item__img" src="${p.image}" alt="">
+        <div class="cart-item__body">
+          <div class="cart-item__title">${p.title}</div>
+          <div class="cart-item__price">${fmt(p.price)}${i.qty > 1 ? ` × ${i.qty}` : ''}</div>
+          <div class="cart-item__row">
+            <div class="cart-qty">
+              <button data-dec aria-label="Decrease quantity">−</button>
+              <span>${i.qty}</span>
+              <button data-inc aria-label="Increase quantity" ${i.qty >= p.remaining ? 'disabled' : ''}>+</button>
+            </div>
+            <button class="cart-item__remove" data-remove>Remove</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const subtotal = cart.reduce((s, i) => s + byId[i.id].price * i.qty, 0);
+  subEl.textContent = fmt(subtotal);
+  const freeShip = freeShippingOver != null && subtotal >= freeShippingOver;
+  shipEl.textContent = freeShip
+    ? 'Free shipping on this order! Or choose local pickup at checkout.'
+    : `+ ${fmt(flatShipping)} flat-rate shipping (or free local pickup) — added at checkout.`;
+  footEl.style.display = '';
+}
+
+// ── Drawer open/close ────────────────────────────────────────────────────────
+function openDrawer()  { overlay.classList.add('open'); drawer.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeDrawer() { overlay.classList.remove('open'); drawer.classList.remove('open'); document.body.style.overflow = ''; }
+
+fab.addEventListener('click', openDrawer);
+overlay.addEventListener('click', closeDrawer);
+document.getElementById('cartClose').addEventListener('click', closeDrawer);
+
+// ── Cart mutations ───────────────────────────────────────────────────────────
+function addToCart(id) {
+  const p = byId[id];
+  if (!p || p.remaining <= 0) return;
+  const existing = cart.find(i => i.id === id);
+  if (existing) {
+    if (existing.qty >= p.remaining) return;
+    existing.qty += 1;
+  } else {
+    cart.push({ id, qty: 1 });
+  }
+  saveCart(); render();
+  fab.classList.remove('bump'); void fab.offsetWidth; fab.classList.add('bump');
+}
+
+itemsEl.addEventListener('click', e => {
+  const row = e.target.closest('.cart-item');
+  if (!row) return;
+  const id = row.dataset.id;
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  if (e.target.closest('[data-inc]'))    { if (item.qty < byId[id].remaining) item.qty += 1; }
+  if (e.target.closest('[data-dec]'))    { item.qty -= 1; if (item.qty <= 0) cart = cart.filter(i => i.id !== id); }
+  if (e.target.closest('[data-remove]')) { cart = cart.filter(i => i.id !== id); }
+  saveCart(); render();
+});
+
+// Add-to-cart buttons anywhere on the page
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-add-to-cart');
+  if (!btn) return;
+  addToCart(btn.dataset.productId);
+  openDrawer();
+});
+
+// Expose for the product detail modal
+window.pxpCart = { add: addToCart, open: openDrawer };
+
+// ── Checkout (embedded Stripe) ───────────────────────────────────────────────
+const ckModal     = document.getElementById('shopCheckoutModal');
+const ckContainer = document.getElementById('shopCheckoutContainer');
+const ckLoading   = document.getElementById('shopCheckoutLoading');
+const ckSubtitle  = document.getElementById('shopCheckoutSubtitle');
+
+let stripeInstance = null, embeddedCheckout = null;
+
+async function getStripe() {
+  if (stripeInstance) return stripeInstance;
+  await new Promise((res, rej) => {
+    if (window.Stripe) { res(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  stripeInstance = window.Stripe(stripePublishableKey);
+  return stripeInstance;
+}
+
+document.getElementById('cartCheckout').addEventListener('click', async () => {
+  if (cart.length === 0) return;
+  closeDrawer();
+  ckModal.style.display = 'flex';
+  ckLoading.style.display = '';
+  ckLoading.innerHTML = `<div style="width:32px;height:32px;border:2px solid #e0e0e0;border-top-color:#3da89e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>Preparing secure checkout…`;
+  ckContainer.style.display = 'none';
+  ckContainer.innerHTML = '';
+  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+  ckSubtitle.textContent = `${totalQty} item${totalQty !== 1 ? 's' : ''} · Secure checkout`;
+  document.body.style.overflow = 'hidden';
+
+  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
+
+  try {
+    const stripe = await getStripe();
+    const res = await fetch('/api/shop/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
+
+    embeddedCheckout = await stripe.initEmbeddedCheckout({ clientSecret: data.clientSecret });
+    ckLoading.style.display = 'none';
+    ckContainer.style.display = '';
+    embeddedCheckout.mount('#shopCheckoutContainer');
+  } catch (err) {
+    ckLoading.innerHTML = `<div style="color:#e2725b">⚠ ${err.message}</div>`;
+  }
+});
+
+function closeCheckout() {
+  ckModal.style.display = 'none';
+  document.body.style.overflow = '';
+  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
+  ckContainer.innerHTML = '';
+}
+document.getElementById('shopCheckoutClose').addEventListener('click', closeCheckout);
+ckModal.addEventListener('click', e => { if (e.target === ckModal) closeCheckout(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (ckModal.style.display === 'flex') closeCheckout();
+  else closeDrawer();
+});
+
+render();
+</script>
