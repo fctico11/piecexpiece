@@ -100,6 +100,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       ui_mode: 'embedded',
       mode: 'payment',
       line_items: lineItems,
+      allow_promotion_codes: true,
       shipping_address_collection: { allowed_countries: ['US'] },
       shipping_options: shippingOptions,
       payment_intent_data: {

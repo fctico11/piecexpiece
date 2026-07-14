@@ -104,10 +104,11 @@ modal.addEventListener('click', (e) => { if (e.target === modal) closeProductDet
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') closeProductDetail(); });
 
 document.addEventListener('click', (e) => {
+  // Quick-add button sits inside the card frame — let the cart handle it
+  if ((e.target as HTMLElement).closest('.btn-add-to-cart')) return;
   const btn = (e.target as HTMLElement).closest('.btn-show-product');
   if (!btn) return;
-  e.stopPropagation();
   const card = btn.closest('[data-product-id]') as HTMLElement;
-  if (card) openProductDetail(card);
+  if (card) openProductDetail(card); // sold pieces stay viewable too
 });
 </script>

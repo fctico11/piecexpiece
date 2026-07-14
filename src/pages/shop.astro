@@ -18,6 +18,8 @@ const products = (shopData.products as any[]).map(p => ({
 // Available pieces first, sold pieces at the end
 products.sort((a, b) => (a.remaining <= 0 ? 1 : 0) - (b.remaining <= 0 ? 1 : 0));
 
+const categories = [...new Set(products.map(p => p.category).filter(Boolean))] as string[];
+
 const settings = shopData.settings as any;
 const catalog = products
   .filter(p => p.remaining > 0)
@@ -39,13 +41,34 @@ const catalog = products
   <!-- Product Grid -->
   <section id="shop-items" class="section mosaic-section mosaic-section--emerald mosaic-clip-2" style="padding-top: 40px;">
     <div class="container">
-      <div class="section-heading fade-in">
+      <div class="section-heading fade-in" style="margin-bottom:0;">
         <span class="section__label">Available Now</span>
         <h2>Original Pieces</h2>
         <p>Each piece ships carefully packed within the US, or choose free local pickup at checkout.</p>
       </div>
 
-      <div class="classes-grid">
+      {products.length > 0 && (
+        <div class="shop-toolbar fade-in">
+          {categories.length > 0 ? (
+            <div class="shop-filters" role="group" aria-label="Filter by category">
+              <button class="shop-filter-chip active" data-filter="all">All</button>
+              {categories.map(cat => (
+                <button class="shop-filter-chip" data-filter={cat}>{cat}</button>
+              ))}
+            </div>
+          ) : <div></div>}
+          <div class="shop-sort">
+            <label for="shopSort">Sort</label>
+            <select id="shopSort">
+              <option value="newest">Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      <div class="shop-grid" id="shopGrid">
         {products.length > 0 ? (
           products.map((p: any, index: number) => (
             <ProductCard
@@ -58,13 +81,14 @@ const catalog = products
               dimensions={p.dimensions}
               badge={p.badge}
               remaining={p.remaining}
-              delay={`fade-in-delay-${(index % 3) + 1}`}
+              index={index}
             />
           ))
         ) : (
           <p style="color:var(--color-text-light);grid-column:1/-1;padding:40px 0;">Nothing in the shop right now — new pieces are always in the works. Check back soon!</p>
         )}
       </div>
+      <p class="shop-empty-filter" id="shopEmptyFilter" style="display:none;color:var(--color-text-light);padding:40px 0;text-align:center;">No pieces in this category right now.</p>
     </div>
   </section>
 
@@ -88,4 +112,45 @@ const catalog = products
     freeShippingOver={settings.freeShippingThresholdCents != null ? settings.freeShippingThresholdCents / 100 : null}
   />
   <ProductDetailModal />
+
+  <script>
+    // ── Category filter + sort ──────────────────────────────────────────────
+    const grid    = document.getElementById('shopGrid')!;
+    const chips   = document.querySelectorAll<HTMLButtonElement>('.shop-filter-chip');
+    const sortSel = document.getElementById('shopSort') as HTMLSelectElement | null;
+    const emptyMsg = document.getElementById('shopEmptyFilter')!;
+    const cards   = [...grid.querySelectorAll<HTMLElement>('.shop-card')];
+    // Remember publish order for "Newest"
+    cards.forEach((c, i) => c.dataset.order = String(i));
+
+    let activeFilter = 'all';
+
+    function apply() {
+      // Sort
+      const mode = sortSel?.value ?? 'newest';
+      const sorted = [...cards].sort((a, b) => {
+        if (mode === 'price-asc')  return Number(a.dataset.productPrice) - Number(b.dataset.productPrice);
+        if (mode === 'price-desc') return Number(b.dataset.productPrice) - Number(a.dataset.productPrice);
+        return Number(a.dataset.order) - Number(b.dataset.order);
+      });
+      sorted.forEach(c => grid.appendChild(c));
+
+      // Filter
+      let visible = 0;
+      cards.forEach(c => {
+        const show = activeFilter === 'all' || c.dataset.productCategory === activeFilter;
+        c.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      emptyMsg.style.display = visible === 0 ? '' : 'none';
+    }
+
+    chips.forEach(chip => chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter ?? 'all';
+      apply();
+    }));
+    sortSel?.addEventListener('change', apply);
+  </script>
 </Base>

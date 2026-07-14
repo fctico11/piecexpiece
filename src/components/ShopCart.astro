@@ -1,6 +1,6 @@
 ---
-// ShopCart.astro — floating cart button, slide-out cart drawer, and the
-// embedded Stripe checkout modal for shop orders.
+// ShopCart.astro — floating cart button and slide-out cart drawer.
+// Checkout happens on the dedicated /shop/checkout page.
 // Exposes window.pxpCart = { add, open } so product cards & modals can hook in.
 export interface Props {
   catalog: {
@@ -10,7 +10,6 @@ export interface Props {
   freeShippingOver: number | null; // dollars, or null
 }
 const { catalog, flatShipping, freeShippingOver } = Astro.props;
-const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
 ---
 
 <!-- Floating cart button -->
@@ -33,7 +32,7 @@ const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
   <div class="cart-drawer__foot" id="cartFoot" style="display:none;">
     <div class="cart-subtotal"><span>Subtotal</span><span id="cartSubtotal">$0</span></div>
     <div class="cart-ship-note" id="cartShipNote"></div>
-    <button class="btn btn--primary btn--full" id="cartCheckout">Checkout</button>
+    <a class="btn btn--primary btn--full" id="cartCheckout" href="/shop/checkout">Checkout</a>
     <span class="stripe-note" style="margin-top:10px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Secure checkout powered by Stripe
@@ -41,26 +40,7 @@ const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
   </div>
 </aside>
 
-<!-- Shop checkout modal (embedded Stripe) -->
-<div id="shopCheckoutModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:24px;">
-  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 24px 64px rgba(0,0,0,0.4);">
-    <div style="padding:20px 24px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0;">
-      <div>
-        <div style="font-weight:700; font-size:1rem; color:#1a1a1a;">Checkout</div>
-        <div style="font-size:0.82rem; color:#666; margin-top:2px;" id="shopCheckoutSubtitle"></div>
-      </div>
-      <button id="shopCheckoutClose" style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#666;flex-shrink:0;">×</button>
-    </div>
-    <div id="shopCheckoutContainer" style="padding:16px 24px 24px;"></div>
-    <div id="shopCheckoutLoading" style="padding:60px 24px; text-align:center; color:#666; font-size:0.9rem;">
-      <div style="width:32px;height:32px;border:2px solid #e0e0e0;border-top-color:#3da89e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
-      Preparing secure checkout…
-    </div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-  </div>
-</div>
-
-<script define:vars={{ catalog, flatShipping, freeShippingOver, stripePublishableKey }}>
+<script define:vars={{ catalog, flatShipping, freeShippingOver }}>
 const CART_KEY = 'pxp_cart';
 const byId = Object.fromEntries(catalog.map(p => [p.id, p]));
 
@@ -137,6 +117,7 @@ function closeDrawer() { overlay.classList.remove('open'); drawer.classList.remo
 fab.addEventListener('click', openDrawer);
 overlay.addEventListener('click', closeDrawer);
 document.getElementById('cartClose').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
 // ── Cart mutations ───────────────────────────────────────────────────────────
 function addToCart(id) {
@@ -173,76 +154,13 @@ document.addEventListener('click', e => {
   openDrawer();
 });
 
+// Restore body scroll before navigating to checkout
+document.getElementById('cartCheckout').addEventListener('click', () => {
+  document.body.style.overflow = '';
+});
+
 // Expose for the product detail modal
 window.pxpCart = { add: addToCart, open: openDrawer };
-
-// ── Checkout (embedded Stripe) ───────────────────────────────────────────────
-const ckModal     = document.getElementById('shopCheckoutModal');
-const ckContainer = document.getElementById('shopCheckoutContainer');
-const ckLoading   = document.getElementById('shopCheckoutLoading');
-const ckSubtitle  = document.getElementById('shopCheckoutSubtitle');
-
-let stripeInstance = null, embeddedCheckout = null;
-
-async function getStripe() {
-  if (stripeInstance) return stripeInstance;
-  await new Promise((res, rej) => {
-    if (window.Stripe) { res(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://js.stripe.com/v3/';
-    s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
-  stripeInstance = window.Stripe(stripePublishableKey);
-  return stripeInstance;
-}
-
-document.getElementById('cartCheckout').addEventListener('click', async () => {
-  if (cart.length === 0) return;
-  closeDrawer();
-  ckModal.style.display = 'flex';
-  ckLoading.style.display = '';
-  ckLoading.innerHTML = `<div style="width:32px;height:32px;border:2px solid #e0e0e0;border-top-color:#3da89e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>Preparing secure checkout…`;
-  ckContainer.style.display = 'none';
-  ckContainer.innerHTML = '';
-  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-  ckSubtitle.textContent = `${totalQty} item${totalQty !== 1 ? 's' : ''} · Secure checkout`;
-  document.body.style.overflow = 'hidden';
-
-  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
-
-  try {
-    const stripe = await getStripe();
-    const res = await fetch('/api/shop/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: cart }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
-
-    embeddedCheckout = await stripe.initEmbeddedCheckout({ clientSecret: data.clientSecret });
-    ckLoading.style.display = 'none';
-    ckContainer.style.display = '';
-    embeddedCheckout.mount('#shopCheckoutContainer');
-  } catch (err) {
-    ckLoading.innerHTML = `<div style="color:#e2725b">⚠ ${err.message}</div>`;
-  }
-});
-
-function closeCheckout() {
-  ckModal.style.display = 'none';
-  document.body.style.overflow = '';
-  if (embeddedCheckout) { embeddedCheckout.destroy(); embeddedCheckout = null; }
-  ckContainer.innerHTML = '';
-}
-document.getElementById('shopCheckoutClose').addEventListener('click', closeCheckout);
-ckModal.addEventListener('click', e => { if (e.target === ckModal) closeCheckout(); });
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  if (ckModal.style.display === 'flex') closeCheckout();
-  else closeDrawer();
-});
 
 render();
 </script>

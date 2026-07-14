@@ -9,22 +9,26 @@ export interface Props {
   dimensions?: string | null;
   badge?: string | null;
   remaining: number;
-  delay?: string;
+  index?: number;
 }
 
 const {
   id, title, description, price, imageSrc,
   category = null, dimensions = null, badge = null,
-  remaining, delay = '',
+  remaining, index = 0,
 } = Astro.props;
 
 const soldOut = remaining <= 0;
-const lowStock = !soldOut && remaining <= 2;
-const displayBadge = soldOut ? 'Sold' : (badge || (lowStock && remaining === 1 ? 'Only 1 Left' : null));
+const displayBadge = badge || (!soldOut && remaining === 1 ? 'One of a Kind' : null);
+const stockLabel = soldOut
+  ? null
+  : remaining === 1 ? 'Only 1 available'
+  : remaining === 2 ? 'Only 2 left'
+  : null;
 ---
 
 <div
-  class={`class-card product-card fade-in ${delay} ${soldOut ? 'product-card--soldout' : ''}`}
+  class={`shop-card fade-in fade-in-delay-${(index % 3) + 1} ${soldOut ? 'shop-card--soldout' : ''}`}
   data-product-id={id}
   data-product-title={title}
   data-product-description={description}
@@ -34,50 +38,28 @@ const displayBadge = soldOut ? 'Sold' : (badge || (lowStock && remaining === 1 ?
   data-product-dimensions={dimensions ?? ''}
   data-product-remaining={String(remaining)}
 >
-  {displayBadge && <div class="class-card__badge">{displayBadge}</div>}
-  <button class="class-card__info-btn btn-show-product" aria-label="More info">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="17"/>
-    </svg>
-  </button>
-  <div class="class-card__img">
+  <div class="shop-card__frame btn-show-product" role="button" tabindex="0" aria-label={`View ${title}`}>
     <img src={imageSrc} alt={title} loading="lazy" />
-  </div>
-  <div class="class-card__body">
-    <h3 class="class-card__name">{title}</h3>
-    <p class="class-card__desc">{description}</p>
-    {(dimensions || category) && (
-      <div class="class-card__meta">
-        {dimensions && (
-          <div class="class-card__meta-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.3 15.3 15.3 21.3a1 1 0 0 1-1.4 0L2.7 10.1a1 1 0 0 1 0-1.4l6-6a1 1 0 0 1 1.4 0l11.2 11.2a1 1 0 0 1 0 1.4z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/><path d="m4.5 13.5 2 2"/></svg>
-            {dimensions}
-          </div>
-        )}
-        {category && (
-          <div class="class-card__meta-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-            {category}
-          </div>
-        )}
-      </div>
+    {displayBadge && !soldOut && <span class="shop-card__badge">{displayBadge}</span>}
+    {soldOut ? (
+      <span class="shop-card__soldout">Sold</span>
+    ) : (
+      <button class="shop-card__quick btn-add-to-cart" data-product-id={id} aria-label={`Add ${title} to cart`}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        Add to Cart
+      </button>
     )}
-    <div class="class-card__price">
-      ${price}
-      {lowStock && <span class="product-card__stock">{remaining === 1 ? 'One of a kind' : `Only ${remaining} left`}</span>}
-    </div>
-    <div class="class-card__footer">
-      {soldOut ? (
-        <button class="btn btn--primary btn--full" disabled style="opacity:.5;cursor:not-allowed;">Sold</button>
-      ) : (
-        <button class="btn btn--primary btn--full btn-add-to-cart" data-product-id={id}>
-          Add to Cart
-        </button>
-      )}
-      <span class="stripe-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Secure checkout powered by Stripe
-      </span>
+  </div>
+  <div class="shop-card__body">
+    {category && <div class="shop-card__cat">{category}</div>}
+    <h3 class="shop-card__name">{title}</h3>
+    <div class="shop-card__price-row">
+      <span class="shop-card__price">${price}</span>
+      {soldOut && <span class="shop-card__stock shop-card__stock--sold">Sold</span>}
+      {stockLabel && <span class="shop-card__stock">{stockLabel}</span>}
     </div>
   </div>
 </div>
