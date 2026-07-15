@@ -137,24 +137,34 @@ export const POST: APIRoute = async ({ request }) => {
         classId,
       };
 
+      // If the stored product/price can't be found (e.g. it was created under a
+      // different Stripe mode — test vs live), fall through and create fresh ones.
+      let needsCreate = !(isEdit && stripeProductId);
       if (isEdit && stripeProductId) {
-        await stripe.products.update(stripeProductId, {
-          name:        body.title,
-          description: body.description,
-          metadata,
-        });
-        const existingPrice = await stripe.prices.retrieve(stripePriceId!);
-        if (existingPrice.unit_amount !== priceInCents) {
-          await stripe.prices.update(stripePriceId!, { active: false });
-          const newPrice = await stripe.prices.create({
-            product:     stripeProductId,
-            unit_amount: priceInCents,
-            currency:    'usd',
+        try {
+          await stripe.products.update(stripeProductId, {
+            name:        body.title,
+            description: body.description,
+            metadata,
           });
-          await stripe.products.update(stripeProductId, { default_price: newPrice.id });
-          stripePriceId = newPrice.id;
+          const existingPrice = await stripe.prices.retrieve(stripePriceId!);
+          if (existingPrice.unit_amount !== priceInCents) {
+            await stripe.prices.update(stripePriceId!, { active: false });
+            const newPrice = await stripe.prices.create({
+              product:     stripeProductId,
+              unit_amount: priceInCents,
+              currency:    'usd',
+            });
+            await stripe.products.update(stripeProductId, { default_price: newPrice.id });
+            stripePriceId = newPrice.id;
+          }
+        } catch (err: any) {
+          if (err?.code !== 'resource_missing') throw err;
+          console.warn(`Stripe product/price for ${classId} not found in this mode — creating a new one.`);
+          needsCreate = true;
         }
-      } else {
+      }
+      if (needsCreate) {
         const product = await stripe.products.create({
           name:        body.title,
           description: body.description,

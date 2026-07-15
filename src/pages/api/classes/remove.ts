@@ -49,9 +49,17 @@ export const POST: APIRoute = async ({ request }) => {
     const cls = data.classes.find((c: any) => c.id === classId);
     if (!cls) return new Response(JSON.stringify({ error: 'Class not found' }), { status: 404 });
 
-    // 3. Archive Stripe product (don't delete — preserves payment records)
+    // 3. Archive Stripe product (don't delete — preserves payment records).
+    // A missing product isn't fatal: it can happen when the class was created
+    // under a different Stripe mode (test vs live) — the class should still
+    // be removable from the site.
     if (stripe && cls.stripeProductId) {
-      await stripe.products.update(cls.stripeProductId, { active: false });
+      try {
+        await stripe.products.update(cls.stripeProductId, { active: false });
+      } catch (err: any) {
+        if (err?.code !== 'resource_missing') throw err;
+        console.warn(`Stripe product ${cls.stripeProductId} not found in this mode — skipping archive.`);
+      }
     }
 
     // 4. Remove from classes.json
