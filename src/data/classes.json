@@ -36,6 +36,25 @@
       "image": "/images/classes/broken-plates-20260720.jpg",
       "stripeProductId": "prod_UknvDgcoNDuyRE",
       "stripePriceId": "price_1TlIK3BNynaUx0jl7SGXeAcP"
+    },
+    {
+      "id": "beginners-mosaic-workshop-20260819",
+      "title": "Beginners Mosaic Workshop",
+      "description": "This one-step mosaic workshop is designed for you to complete and take your finished project home the very same day! Whether you're a complete beginner or have some mosaic experience, this class offers a fun and creative way to learn a new skill while creating a unique piece of art.\nThroughout the workshop, we will guide you through every step of the process, from planning your design to placing and securing your mosaic pieces. You'll learn how to safely cut and break glass and ceramic materials, explore different mosaic techniques, and discover tips for creating beautiful patterns, textures, and color combinations.\nAll materials and tools are provided, and our instructors will be available to offer hands-on assistance and creative guidance throughout the class. By the end of the workshop, you'll leave with a completed mosaic project that reflects your personal style, along with the knowledge and confidence to continue exploring mosaic art on your own.\nCome ready to relax, get creative, and enjoy a rewarding artistic experience with a finished piece you'll be proud to display or gift!",
+      "location": "The Albion 570 Springfield Ave",
+      "date": "2026-08-19",
+      "time": "7:00 PM",
+      "duration": "2 hours",
+      "price": 0,
+      "totalTickets": 0,
+      "ticketsSold": 0,
+      "badge": null,
+      "featured": true,
+      "externalUrl": null,
+      "promotional": true,
+      "image": "/images/classes/beginners-mosaic-workshop-20260819.jpg",
+      "stripeProductId": null,
+      "stripePriceId": null
     }
   ]
 }
