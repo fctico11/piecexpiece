@@ -1,27 +1,33 @@
 ---
+import type { StockMode } from '../lib/shopStore';
+
 export interface Props {
   id: string;
   title: string;
   description: string;
   price: number;
   imageSrc: string;
+  images?: string[];
   category?: string | null;
   dimensions?: string | null;
   badge?: string | null;
   remaining: number;
+  stockMode?: StockMode;
   index?: number;
 }
 
 const {
-  id, title, description, price, imageSrc,
+  id, title, description, price, imageSrc, images = [imageSrc],
   category = null, dimensions = null, badge = null,
-  remaining, index = 0,
+  remaining, stockMode = 'limited', index = 0,
 } = Astro.props;
 
-const soldOut = remaining <= 0;
-const displayBadge = badge || (!soldOut && remaining === 1 ? 'One of a Kind' : null);
-const stockLabel = soldOut
-  ? null
+const madeToOrder = stockMode === 'made_to_order';
+const soldOut = !madeToOrder && remaining <= 0;
+const displayBadge = badge || (!madeToOrder && !soldOut && remaining === 1 ? 'One of a Kind' : null);
+const stockLabel = madeToOrder
+  ? 'Made to order'
+  : soldOut ? null
   : remaining === 1 ? 'Only 1 available'
   : remaining === 2 ? 'Only 2 left'
   : null;
@@ -34,9 +40,11 @@ const stockLabel = soldOut
   data-product-description={description}
   data-product-price={String(price)}
   data-product-image={imageSrc}
+  data-product-images={JSON.stringify(images)}
   data-product-category={category ?? ''}
   data-product-dimensions={dimensions ?? ''}
   data-product-remaining={String(remaining)}
+  data-product-stock-mode={stockMode}
 >
   <div class="shop-card__frame btn-show-product" role="button" tabindex="0" aria-label={`View ${title}`}>
     <img src={imageSrc} alt={title} loading="lazy" />

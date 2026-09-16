@@ -4,7 +4,7 @@
 // Exposes window.pxpCart = { add, open } so product cards & modals can hook in.
 export interface Props {
   catalog: {
-    id: string; title: string; price: number; image: string; remaining: number;
+    id: string; title: string; price: number; image: string; remaining: number; stockMode?: string;
   }[];
   flatShipping: number;           // dollars
   freeShippingOver: number | null; // dollars, or null
@@ -105,8 +105,8 @@ function render() {
   subEl.textContent = fmt(subtotal);
   const freeShip = freeShippingOver != null && subtotal >= freeShippingOver;
   shipEl.textContent = freeShip
-    ? 'Free shipping on this order! Or choose local pickup at checkout.'
-    : `+ ${fmt(flatShipping)} flat-rate shipping (or free local pickup) — added at checkout.`;
+    ? 'Free shipping on this order!'
+    : `+ ${fmt(flatShipping)} flat-rate shipping — added at checkout.`;
   footEl.style.display = '';
 }
 

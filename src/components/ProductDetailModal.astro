@@ -13,6 +13,7 @@
       <img id="pdImage" src="" alt="" style="width:100%;display:block;object-fit:contain;max-height:460px;" />
       <div id="pdBadge" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.9);color:#1a3a5c;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:100px;"></div>
     </div>
+    <div id="pdThumbs" style="display:none;gap:8px;padding:12px 28px 0;overflow-x:auto;"></div>
 
     <div style="padding:28px 28px 32px;">
       <h2 id="pdTitle" style="font-size:1.6rem;color:var(--color-primary);margin:0 0 8px;line-height:1.2;"></h2>
@@ -33,18 +34,36 @@ function openProductDetail(card: HTMLElement) {
   const description = card.dataset.productDescription ?? '';
   const price       = card.dataset.productPrice       ?? '';
   const image       = card.dataset.productImage       ?? '';
+  let images: string[] = [];
+  try { images = JSON.parse(card.dataset.productImages ?? '[]'); } catch { images = [image]; }
+  if (images.length === 0) images = [image];
   const category    = card.dataset.productCategory    ?? '';
   const dimensions  = card.dataset.productDimensions  ?? '';
   const remaining   = Number(card.dataset.productRemaining ?? '0');
   const productId   = card.dataset.productId          ?? '';
-  const soldOut     = remaining <= 0;
+  const madeToOrder = card.dataset.productStockMode === 'made_to_order';
+  const soldOut     = !madeToOrder && remaining <= 0;
 
   const img = document.getElementById('pdImage') as HTMLImageElement;
-  img.src = image; img.alt = title;
+  img.src = images[0]; img.alt = title;
+
+  const thumbs = document.getElementById('pdThumbs') as HTMLElement;
+  if (images.length > 1) {
+    thumbs.style.display = 'flex';
+    thumbs.innerHTML = images.map((src, i) => `
+      <button type="button" data-thumb-src="${src}" style="flex-shrink:0;width:56px;height:56px;border-radius:8px;overflow:hidden;padding:0;cursor:pointer;background:#f5f0ea;border:2px solid ${i === 0 ? 'var(--color-turquoise)' : 'transparent'};">
+        <img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </button>`).join('');
+  } else {
+    thumbs.style.display = 'none';
+    thumbs.innerHTML = '';
+  }
 
   const badge = document.getElementById('pdBadge') as HTMLElement;
   if (soldOut) {
     badge.textContent = 'Sold'; badge.style.display = '';
+  } else if (madeToOrder) {
+    badge.textContent = 'Made to Order'; badge.style.display = '';
   } else if (remaining === 1) {
     badge.textContent = 'One of a Kind'; badge.style.display = '';
   } else {
@@ -65,10 +84,15 @@ function openProductDetail(card: HTMLElement) {
   if (category)   meta.innerHTML += chip('Type', category);
 
   const stock = document.getElementById('pdStock') as HTMLElement;
-  if (!soldOut && remaining <= 3) {
+  if (!soldOut && !madeToOrder && remaining <= 3) {
     stock.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#e2725b;font-weight:600;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       ${remaining === 1 ? 'One of a kind — only 1 available' : `Only ${remaining} available`}
+    </div>`;
+  } else if (!soldOut && madeToOrder) {
+    stock.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#7a8fa6;font-weight:600;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Made to order — please allow extra time before it ships
     </div>`;
   } else {
     stock.innerHTML = '';
@@ -98,6 +122,15 @@ function closeProductDetail() {
   modal.style.display = 'none';
   document.body.style.overflow = '';
 }
+
+document.getElementById('pdThumbs')!.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('[data-thumb-src]') as HTMLElement;
+  if (!btn) return;
+  (document.getElementById('pdImage') as HTMLImageElement).src = btn.dataset.thumbSrc ?? '';
+  btn.parentElement!.querySelectorAll('[data-thumb-src]').forEach(el =>
+    (el as HTMLElement).style.borderColor = el === btn ? 'var(--color-turquoise)' : 'transparent'
+  );
+});
 
 document.getElementById('productDetailClose')!.addEventListener('click', closeProductDetail);
 modal.addEventListener('click', (e) => { if (e.target === modal) closeProductDetail(); });

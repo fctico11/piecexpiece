@@ -1,33 +1,7 @@
 {
   "settings": {
     "flatShippingCents": 1200,
-    "freeShippingThresholdCents": null,
-    "localPickupEnabled": true
+    "freeShippingThresholdCents": null
   },
-  "products": [
-    {
-      "id": "sample-suncatcher-mosaic",
-      "title": "Sample: Suncatcher Mosaic",
-      "description": "TEST ITEM — delete before launch. A one-of-a-kind stained glass suncatcher mosaic, handmade piece by piece. Catches the morning light beautifully.",
-      "price": 85,
-      "quantity": 1,
-      "sold": 0,
-      "category": "Mosaics",
-      "dimensions": "8\" x 8\"",
-      "badge": "One of a Kind",
-      "image": "/images/gallery-2.jpg"
-    },
-    {
-      "id": "sample-ceramic-plate-coasters",
-      "title": "Sample: Broken Plate Coaster Set",
-      "description": "TEST ITEM — delete before launch. Set of four coasters made from upcycled ceramic plates, sealed and backed with cork.",
-      "price": 40,
-      "quantity": 3,
-      "sold": 0,
-      "category": "Home",
-      "dimensions": "4\" x 4\" each",
-      "badge": null,
-      "image": "/images/gallery-5.jpg"
-    }
-  ]
+  "products": []
 }

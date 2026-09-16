@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import { createHash } from 'crypto';
+import Stripe from 'stripe';
 import shopData from '../../data/products.json';
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -15,7 +16,27 @@ if (!isAuth) return Astro.redirect('/admin');
 
 const products = (shopData.products as any[]);
 const settings = shopData.settings as any;
-const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).length;
+const availableCount = products.filter(p => p.stockMode === 'made_to_order' || (p.quantity - (p.sold || 0) > 0)).length;
+
+// ── Promo codes (Stripe Coupons + PromotionCodes — no local storage needed) ──
+let promoCodes: { id: string; code: string; active: boolean; type: 'percent' | 'fixed'; value: number; timesRedeemed: number }[] = [];
+try {
+  const stripeKey = import.meta.env.STRIPE_SECRET_KEY;
+  if (stripeKey) {
+    const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' });
+    const promos = await stripe.promotionCodes.list({ limit: 100, expand: ['data.coupon'] });
+    promoCodes = promos.data.map(p => ({
+      id: p.id,
+      code: p.code,
+      active: p.active,
+      type: p.coupon.percent_off != null ? 'percent' : 'fixed',
+      value: p.coupon.percent_off ?? (p.coupon.amount_off ?? 0) / 100,
+      timesRedeemed: p.times_redeemed,
+    }));
+  }
+} catch (err) {
+  console.error('Failed to load promo codes:', err);
+}
 ---
 
 <!DOCTYPE html>
@@ -233,6 +254,15 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
     .btn-img-action:hover { border-color: #3da89e; color: #3da89e; background: rgba(61,168,158,.04); }
     .btn-img-action.remove:hover { border-color: #c85a46; color: #c85a46; background: rgba(200,90,70,.04); }
 
+    /* Multi-image grid */
+    .img-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, 96px);
+      gap: 10px; margin-bottom: 12px;
+    }
+    .img-grid:empty { display: none; }
+    .img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-tile__remove:hover { background: #c85a46; }
+
     /* Form fields */
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
@@ -356,16 +386,6 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
         <div class="input-pfx"><span>$</span><input type="number" id="sFreeOver" min="0" step="1" value={settings.freeShippingThresholdCents != null ? String(settings.freeShippingThresholdCents / 100) : ''} placeholder="e.g. 150" /></div>
       </div>
     </div>
-    <div class="toggle-row" style="margin-bottom:14px;">
-      <label class="toggle">
-        <input type="checkbox" id="sPickup" checked={settings.localPickupEnabled} />
-        <span class="toggle__track"></span>
-      </label>
-      <div class="toggle-info">
-        <div class="toggle-label">Offer free local pickup</div>
-        <div class="toggle-sub">Adds a "Local pickup" option at checkout. You'll email the buyer to arrange a time and place.</div>
-      </div>
-    </div>
     <div class="ship-actions">
       <span class="ship-saved" id="shipSaved">✓ Saved</span>
       <button class="btn-publish" id="btnSaveShipping">Save Shipping Settings</button>
@@ -391,7 +411,8 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
     <div class="product-list">
       {products.map(p => {
         const sold = p.sold || 0;
-        const rem  = p.quantity - sold;
+        const madeToOrder = p.stockMode === 'made_to_order';
+        const rem = madeToOrder ? null : p.quantity - sold;
         return (
           <div class="product-row" data-id={p.id}>
             <img class="product-row__img" src={p.image} alt={p.title} />
@@ -399,10 +420,14 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
               <div class="product-row__title">{p.title}</div>
               <div class="product-row__meta">
                 <span>${p.price}</span>
-                <span>{rem} of {p.quantity} in stock{sold > 0 ? ` · ${sold} sold` : ''}</span>
+                {madeToOrder ? (
+                  <span>Made to order{sold > 0 ? ` · ${sold} sold` : ''}</span>
+                ) : (
+                  <span>{rem} of {p.quantity} in stock{sold > 0 ? ` · ${sold} sold` : ''}</span>
+                )}
                 {p.category && <span>{p.category}</span>}
-                {rem === 0 && <span class="pill pill--red">Sold Out</span>}
-                {rem > 0 && rem <= 2 && <span class="pill pill--teal">Low Stock</span>}
+                {!madeToOrder && rem === 0 && <span class="pill pill--red">Sold Out</span>}
+                {!madeToOrder && rem > 0 && rem <= 2 && <span class="pill pill--teal">Low Stock</span>}
               </div>
             </div>
             <div class="product-row__actions">
@@ -414,6 +439,55 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
       })}
     </div>
   )}
+
+  <!-- Promo codes -->
+  <div class="section-header" style="margin-top:8px;">
+    <span class="section-title">Promo Codes</span>
+    <span class="section-badge">{promoCodes.filter(p => p.active).length} active</span>
+  </div>
+  <div class="ship-card">
+    <div class="ship-grid" style="grid-template-columns:1.3fr 1fr 1fr;">
+      <div class="field">
+        <label>Code</label>
+        <input type="text" id="pCode" placeholder="e.g. SUMMER10" style="text-transform:uppercase;" />
+      </div>
+      <div class="field">
+        <label>Discount Type</label>
+        <select id="pType">
+          <option value="percent">Percent off</option>
+          <option value="fixed">Dollar amount off</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="pValueLabel">Percent (%)</label>
+        <input type="number" id="pValue" min="1" step="1" placeholder="10" />
+      </div>
+    </div>
+    <div class="ship-actions">
+      <span class="ship-saved" id="promoSaved">✓ Created</span>
+      <button class="btn-publish" id="btnCreatePromo">+ Create Code</button>
+    </div>
+
+    {promoCodes.length > 0 && (
+      <div class="product-list" style="margin-top:20px;margin-bottom:0;">
+        {promoCodes.map(p => (
+          <div class="product-row">
+            <div class="product-row__body">
+              <div class="product-row__title">{p.code}</div>
+              <div class="product-row__meta">
+                <span>{p.type === 'percent' ? `${p.value}% off` : `$${p.value} off`}</span>
+                <span>{p.timesRedeemed} used</span>
+                <span class={`pill ${p.active ? 'pill--teal' : 'pill--red'}`}>{p.active ? 'Active' : 'Inactive'}</span>
+              </div>
+            </div>
+            <div class="product-row__actions">
+              <button class="btn-ghost" data-toggle-promo={p.id} data-active={String(p.active)}>{p.active ? 'Deactivate' : 'Reactivate'}</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
 </div>
 
 <!-- ── FORM PANEL ──────────────────────────────────────────────────────── -->
@@ -425,29 +499,17 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
 
   <div class="form-title" id="formTitle">New Item</div>
 
-  <!-- Image -->
+  <!-- Images -->
   <div class="form-section">
-    <div class="form-section-label">Item Photo</div>
-    <div class="img-upload-area">
-      <div id="imgDrop" class="img-drop">
-        <input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp" />
-        <div class="img-drop__icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        </div>
-        <div class="img-drop__label"><strong>Click to upload</strong> or drag & drop</div>
-        <div class="img-drop__hint">JPG, PNG, WebP — auto-compressed for web. Square photos look best.</div>
+    <div class="form-section-label">Item Photos</div>
+    <div class="img-grid" id="imgGrid"></div>
+    <div id="imgDrop" class="img-drop">
+      <input type="file" id="imgFileAdd" accept="image/jpeg,image/png,image/webp" multiple />
+      <div class="img-drop__icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       </div>
-
-      <div id="imgPreview" style="display:none;">
-        <img id="imgPreviewEl" src="" alt="Preview" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;display:block;" />
-        <div class="img-preview-actions">
-          <label class="btn-img-action">
-            <input type="file" id="imgFileReplace" accept="image/jpeg,image/png,image/webp" />
-            📷 Change Photo
-          </label>
-          <button class="btn-img-action remove" id="btnRemoveImg" type="button">✕ Remove</button>
-        </div>
-      </div>
+      <div class="img-drop__label"><strong>Click to upload</strong> or drag & drop — pick multiple at once</div>
+      <div class="img-drop__hint">JPG, PNG, WebP — auto-compressed for web. Up to 8 photos. First photo is the cover shown in the shop — click any other photo to make it the cover.</div>
     </div>
   </div>
 
@@ -470,12 +532,24 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
         <div class="input-pfx"><span>$</span><input type="number" id="fPrice" placeholder="85" min="1" step="0.01" /></div>
       </div>
       <div class="field">
-        <label>Quantity Available <span style="color:#e2725b">*</span></label>
-        <input type="number" id="fQuantity" placeholder="1" min="1" step="1" value="1" />
-      </div>
-      <div class="field">
         <label>Size / Dimensions <span class="opt">(optional)</span></label>
         <input type="text" id="fDimensions" placeholder={'e.g. 8" x 10"'} />
+      </div>
+      <div class="field full">
+        <div class="toggle-row">
+          <label class="toggle">
+            <input type="checkbox" id="fMadeToOrder" />
+            <span class="toggle__track"></span>
+          </label>
+          <div class="toggle-info">
+            <div class="toggle-label">Made to order</div>
+            <div class="toggle-sub">No quantity limit — you'll make this after it's ordered. Customers won't see a stock count, just a "Made to order" note. Turn off to set a fixed quantity in stock.</div>
+          </div>
+        </div>
+      </div>
+      <div class="field" id="fQuantityField">
+        <label>Quantity Available <span style="color:#e2725b">*</span></label>
+        <input type="number" id="fQuantity" placeholder="1" min="1" step="1" value="1" />
       </div>
       <div class="field">
         <label>Category <span class="opt">(optional — e.g. "Mosaics", "Home")</span></label>
@@ -505,7 +579,8 @@ const availableCount = products.filter(p => p.quantity - (p.sold || 0) > 0).leng
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
 let editingId = null;
-let existingImage = null, imageBase64 = null, imageExt = null;
+// Each entry: { previewSrc, url? (existing, kept as-is) } or { previewSrc, base64, ext } (newly added)
+let images = [];
 
 const listPanel = document.getElementById('listPanel');
 const formPanel = document.getElementById('formPanel');
@@ -567,50 +642,78 @@ function compressImage(file) {
   });
 }
 
-async function setImage(file) {
-  if (!file) return;
-  const result = await compressImage(file);
-  imageBase64 = result.base64; imageExt = result.ext;
-  document.getElementById('imgPreviewEl').src = `data:image/jpeg;base64,${result.base64}`;
-  document.getElementById('imgDrop').style.display = 'none';
-  document.getElementById('imgPreview').style.display = 'block';
+function renderImageGrid() {
+  const grid = document.getElementById('imgGrid');
+  grid.innerHTML = images.map((img, i) => `
+    <div class="img-tile ${i === 0 ? 'is-cover' : ''}" data-idx="${i}" style="position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 2px solid ${i === 0 ? '#3da89e' : 'transparent'}; background: #f0ebe3;">
+      <img src="${img.previewSrc}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+      ${i === 0 ? '<span class="img-tile__cover-badge" style="position: absolute; top: 6px; left: 6px; background: rgba(61,168,158,.95); color: #fff; font-size: 0.62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 20px;">Cover</span>' : ''}
+      <button type="button" class="img-tile__remove" data-remove-idx="${i}" aria-label="Remove photo" style="position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: rgba(20,30,45,.65); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; line-height: 1;">✕</button>
+    </div>
+  `).join('');
 }
 
-function clearImage() {
-  imageBase64 = null; imageExt = null; existingImage = null;
-  document.getElementById('imgPreview').style.display = 'none';
-  document.getElementById('imgDrop').style.display = '';
-  document.getElementById('imgFile').value = '';
-  document.getElementById('imgFileReplace').value = '';
-  document.getElementById('imgPreviewEl').src = '';
+async function addImages(files) {
+  for (const file of files) {
+    if (images.length >= 8) break;
+    const result = await compressImage(file);
+    images.push({ base64: result.base64, ext: result.ext, previewSrc: `data:image/jpeg;base64,${result.base64}` });
+  }
+  renderImageGrid();
 }
 
-document.getElementById('imgFile').addEventListener('change',        e => setImage(e.target.files[0]));
-document.getElementById('imgFileReplace').addEventListener('change', e => setImage(e.target.files[0]));
-document.getElementById('btnRemoveImg').addEventListener('click',    clearImage);
+document.getElementById('imgGrid').addEventListener('click', e => {
+  const removeBtn = e.target.closest('[data-remove-idx]');
+  if (removeBtn) {
+    images.splice(Number(removeBtn.dataset.removeIdx), 1);
+    renderImageGrid();
+    return;
+  }
+  const tile = e.target.closest('.img-tile');
+  if (tile) {
+    const idx = Number(tile.dataset.idx);
+    if (idx > 0) { const [moved] = images.splice(idx, 1); images.unshift(moved); renderImageGrid(); }
+  }
+});
+
+document.getElementById('imgFileAdd').addEventListener('change', e => {
+  addImages([...e.target.files]);
+  e.target.value = '';
+});
 
 const imgDrop = document.getElementById('imgDrop');
 imgDrop.addEventListener('dragover',  e => { e.preventDefault(); imgDrop.classList.add('drag-over'); });
 imgDrop.addEventListener('dragleave', ()  => imgDrop.classList.remove('drag-over'));
-imgDrop.addEventListener('drop',      e  => { e.preventDefault(); imgDrop.classList.remove('drag-over'); setImage(e.dataTransfer.files[0]); });
+imgDrop.addEventListener('drop',      e  => { e.preventDefault(); imgDrop.classList.remove('drag-over'); addImages([...e.dataTransfer.files]); });
+
+// ── Stock mode toggle ─────────────────────────────────────────────────────
+function applyStockModeVisibility() {
+  const madeToOrder = document.getElementById('fMadeToOrder').checked;
+  document.getElementById('fQuantityField').style.display = madeToOrder ? 'none' : '';
+}
+document.getElementById('fMadeToOrder').addEventListener('change', applyStockModeVisibility);
 
 // ── Clear form ─────────────────────────────────────────────────────────────
 function clearForm() {
   editingId = null;
-  clearImage();
+  images = [];
+  renderImageGrid();
   ['fTitle','fDesc','fPrice','fDimensions','fCategory','fBadge'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fQuantity').value = '1';
+  document.getElementById('fMadeToOrder').checked = false;
+  applyStockModeVisibility();
 }
 
 // ── Edit ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('[data-edit]').forEach(btn => {
   btn.addEventListener('click', () => {
     const p = JSON.parse(btn.dataset.edit);
-    editingId     = p.id;
-    existingImage = p.image || null;
-    imageBase64 = null; imageExt = null;
+    editingId = p.id;
+    const existingUrls = p.images?.length ? p.images : (p.image ? [p.image] : []);
+    images = existingUrls.map(url => ({ url, previewSrc: url }));
+    renderImageGrid();
 
     document.getElementById('fTitle').value      = p.title       || '';
     document.getElementById('fDesc').value       = p.description || '';
@@ -619,14 +722,9 @@ document.querySelectorAll('[data-edit]').forEach(btn => {
     document.getElementById('fDimensions').value = p.dimensions  || '';
     document.getElementById('fCategory').value   = p.category    || '';
     document.getElementById('fBadge').value      = p.badge       || '';
+    document.getElementById('fMadeToOrder').checked = p.stockMode === 'made_to_order';
+    applyStockModeVisibility();
 
-    if (p.image) {
-      document.getElementById('imgPreviewEl').src = p.image;
-      document.getElementById('imgPreview').style.display = 'block';
-      document.getElementById('imgDrop').style.display = 'none';
-    } else {
-      clearImage();
-    }
     showForm('Edit Item');
   });
 });
@@ -660,7 +758,6 @@ document.getElementById('btnSaveShipping').addEventListener('click', async () =>
   const flat = parseFloat(document.getElementById('sFlat').value);
   const freeOverRaw = document.getElementById('sFreeOver').value;
   const freeOver = freeOverRaw === '' ? null : parseFloat(freeOverRaw);
-  const pickup = document.getElementById('sPickup').checked;
 
   if (isNaN(flat) || flat < 0) return alert('Please enter a valid flat shipping rate.');
 
@@ -670,7 +767,7 @@ document.getElementById('btnSaveShipping').addEventListener('click', async () =>
     const res = await fetch('/api/shop/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ flatShipping: flat, freeShippingOver: freeOver, localPickupEnabled: pickup }),
+      body: JSON.stringify({ flatShipping: flat, freeShippingOver: freeOver }),
     });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed');
     showToast('✓ Shipping settings saved. Site updating…', 'success');
@@ -682,12 +779,70 @@ document.getElementById('btnSaveShipping').addEventListener('click', async () =>
   btn.disabled = false;
 });
 
+// ── Promo codes ────────────────────────────────────────────────────────────
+document.getElementById('pType')?.addEventListener('change', () => {
+  document.getElementById('pValueLabel').textContent =
+    document.getElementById('pType').value === 'percent' ? 'Percent (%)' : 'Dollar amount ($)';
+});
+
+document.getElementById('btnCreatePromo')?.addEventListener('click', async () => {
+  const code  = document.getElementById('pCode').value.trim().toUpperCase();
+  const type  = document.getElementById('pType').value;
+  const value = parseFloat(document.getElementById('pValue').value);
+
+  if (!code) return alert('Please enter a code.');
+  if (!value || value <= 0) return alert('Please enter a discount value greater than 0.');
+  if (type === 'percent' && value > 100) return alert('Percent off can\'t exceed 100.');
+
+  const btn = document.getElementById('btnCreatePromo');
+  btn.disabled = true;
+  showToast('Creating code…', 'loading');
+  try {
+    const res = await fetch('/api/shop/promo/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, type, value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create code');
+    showToast('✓ Code created', 'success');
+    document.getElementById('promoSaved').style.display = 'inline';
+    setTimeout(() => location.reload(), 1000);
+  } catch (err) {
+    showToast('✗ ' + err.message, 'error');
+    btn.disabled = false;
+  }
+});
+
+document.querySelectorAll('[data-toggle-promo]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.togglePromo;
+    const nowActive = btn.dataset.active === 'true';
+    btn.disabled = true;
+    showToast(nowActive ? 'Deactivating…' : 'Reactivating…', 'loading');
+    try {
+      const res = await fetch('/api/shop/promo/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, active: !nowActive }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      showToast('✓ Updated', 'success');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast('✗ ' + err.message, 'error');
+      btn.disabled = false;
+    }
+  });
+});
+
 // ── Publish ────────────────────────────────────────────────────────────────
 document.getElementById('btnPublish').addEventListener('click', async () => {
   const title      = document.getElementById('fTitle').value.trim();
   const desc       = document.getElementById('fDesc').value.trim();
   const price      = parseFloat(document.getElementById('fPrice').value);
-  const quantity   = parseInt(document.getElementById('fQuantity').value);
+  const madeToOrder = document.getElementById('fMadeToOrder').checked;
+  const quantity   = madeToOrder ? null : parseInt(document.getElementById('fQuantity').value);
   const dimensions = document.getElementById('fDimensions').value.trim();
   const category   = document.getElementById('fCategory').value.trim();
   const badge      = document.getElementById('fBadge').value.trim();
@@ -695,14 +850,14 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
   if (!title)                    return alert('Please enter an item name.');
   if (!desc)                     return alert('Please enter a description.');
   if (!price || price <= 0)      return alert('Please enter a valid price.');
-  if (!quantity || quantity < 1) return alert('Please enter the quantity available (1 for one-of-a-kind pieces).');
-  if (!imageBase64 && !existingImage) return alert('Please upload a photo of the item.');
+  if (!madeToOrder && (!quantity || quantity < 1)) return alert('Please enter the quantity available (1 for one-of-a-kind pieces), or turn on "Made to order".');
+  if (images.length === 0) return alert('Please upload at least one photo of the item.');
 
   const btn    = document.getElementById('btnPublish');
   const status = document.getElementById('formStatus');
   btn.disabled = true;
   status.className = 'form-status loading';
-  status.innerHTML = '<div class="spinner-md"></div> Publishing — uploading photo and saving item…';
+  status.innerHTML = '<div class="spinner-md"></div> Publishing — uploading photos and saving item…';
 
   try {
     const res = await fetch('/api/shop/upsert', {
@@ -711,10 +866,11 @@ document.getElementById('btnPublish').addEventListener('click', async () => {
       body: JSON.stringify({
         ...(editingId ? { id: editingId } : {}),
         title, description: desc, price, quantity,
+        stockMode: madeToOrder ? 'made_to_order' : 'limited',
         dimensions: dimensions || null,
         category: category || null,
         badge: badge || null,
-        ...(imageBase64 ? { imageBase64, imageExt } : {}),
+        images: images.map(img => img.url ? { url: img.url } : { base64: img.base64, ext: img.ext }),
       }),
     });
     const data = await res.json();

@@ -8,7 +8,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  let body: { flatShipping: number; freeShippingOver?: number | null; localPickupEnabled: boolean };
+  let body: { flatShipping: number; freeShippingOver?: number | null };
   try {
     body = await request.json();
   } catch {
@@ -25,7 +25,6 @@ export const POST: APIRoute = async ({ request }) => {
       flatShippingCents: Math.round(body.flatShipping * 100),
       freeShippingThresholdCents:
         body.freeShippingOver && body.freeShippingOver > 0 ? Math.round(body.freeShippingOver * 100) : null,
-      localPickupEnabled: !!body.localPickupEnabled,
     };
     await writeShopData(data, 'Update shop shipping settings', sha);
     return new Response(JSON.stringify({ ok: true }), { status: 200 });

@@ -12,20 +12,31 @@ export const SHOP_IMAGES_DIR = 'public/images/shop';
 export interface ShopSettings {
   flatShippingCents: number;
   freeShippingThresholdCents: number | null;
-  localPickupEnabled: boolean;
 }
+
+export type StockMode = 'limited' | 'made_to_order';
+
+/** Sentinel "remaining" value for made-to-order items — effectively unlimited,
+ *  but a real JSON-serializable number so existing remaining/quantity math
+ *  (comparisons, sorting, cart clamping) keeps working without special-casing. */
+export const UNLIMITED_STOCK = Number.MAX_SAFE_INTEGER;
 
 export interface ShopProduct {
   id: string;
   title: string;
   description: string;
   price: number;
-  quantity: number;
+  stockMode: StockMode;
+  /** Required (>=1) when stockMode is 'limited'; null when 'made_to_order'. */
+  quantity: number | null;
   sold: number;
   category: string | null;
   dimensions: string | null;
   badge: string | null;
+  /** Cover image — always images[0]; kept alongside `images` for consumers that only need one. */
   image: string;
+  /** All product photos in display order, up to 8. images[0] is the cover shown everywhere else. */
+  images: string[];
 }
 
 export interface ShopData {
@@ -86,7 +97,7 @@ export async function readShopData(): Promise<{ data: ShopData; sha?: string }> 
   }
   const file = await githubGet(PRODUCTS_PATH);
   if (!file?.content) {
-    return { data: { settings: { flatShippingCents: 1200, freeShippingThresholdCents: null, localPickupEnabled: true }, products: [] } };
+    return { data: { settings: { flatShippingCents: 1200, freeShippingThresholdCents: null }, products: [] } };
   }
   return {
     data: JSON.parse(Buffer.from(file.content, 'base64').toString('utf8')),

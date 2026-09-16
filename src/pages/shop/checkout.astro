@@ -1,13 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import shopData from '../../data/products.json';
+import { UNLIMITED_STOCK } from '../../lib/shopStore';
 
 const title = "Checkout — Piece x Piece Mosaics";
 const description = "Secure checkout for your handmade mosaic pieces.";
 
 const settings = shopData.settings as any;
 const catalog = (shopData.products as any[])
-  .map(p => ({ id: p.id, title: p.title, price: p.price, image: p.image, dimensions: p.dimensions, remaining: p.quantity - (p.sold || 0) }))
+  .map(p => ({
+    id: p.id, title: p.title, price: p.price, image: p.image, dimensions: p.dimensions,
+    remaining: p.stockMode === 'made_to_order' ? UNLIMITED_STOCK : p.quantity - (p.sold || 0),
+  }))
   .filter(p => p.remaining > 0);
 
 const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
@@ -185,7 +189,7 @@ const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
     </div>
   </div>
 
-  <script define:vars={{ catalog, stripePublishableKey, flatShippingCents: settings.flatShippingCents, freeShippingThresholdCents: settings.freeShippingThresholdCents, localPickupEnabled: settings.localPickupEnabled }}>
+  <script define:vars={{ catalog, stripePublishableKey, flatShippingCents: settings.flatShippingCents, freeShippingThresholdCents: settings.freeShippingThresholdCents }}>
   const CART_KEY = 'pxp_cart';
   const byId = Object.fromEntries(catalog.map(p => [p.id, p]));
 
@@ -211,38 +215,39 @@ const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
 
     // ── Render order summary ────────────────────────────────────────────────
     const itemsEl = document.getElementById('summaryItems');
+    // Inline styles below: this markup is injected via innerHTML, so Astro's scoped
+    // <style> classes (.summary-item*) never attach to it — inline is the only way
+    // these rules actually apply to dynamically-rendered content.
     itemsEl.innerHTML = cart.map(i => {
       const p = byId[i.id];
       return `
-        <div class="summary-item">
-          <div class="summary-item__thumb">
-            <img src="${p.image}" alt="">
-            <span class="summary-item__qty">${i.qty}</span>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <div style="position:relative;flex-shrink:0;">
+            <img src="${p.image}" alt="" style="width:62px;height:62px;border-radius:10px;object-fit:cover;border:1px solid rgba(26,58,92,0.12);background:white;display:block;">
+            <span title="Quantity" style="position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:100px;background:var(--color-primary);color:white;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #f8f5f0;">${i.qty}</span>
           </div>
-          <div class="summary-item__body">
-            <div class="summary-item__name">${p.title}</div>
-            ${p.dimensions ? `<div class="summary-item__dims">${p.dimensions}</div>` : ''}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.88rem;font-weight:600;color:var(--color-primary);line-height:1.3;">${p.title}</div>
+            ${p.dimensions ? `<div style="font-size:0.76rem;color:var(--color-text-light);margin-top:1px;">${p.dimensions}</div>` : ''}
+            ${i.qty > 1 ? `<div style="font-size:0.76rem;color:var(--color-text-light);margin-top:1px;">Qty ${i.qty} × ${fmt(p.price)}</div>` : ''}
           </div>
-          <div class="summary-item__amount">${fmt(p.price * i.qty)}</div>
+          <div style="font-size:0.88rem;font-weight:600;color:var(--color-primary);white-space:nowrap;">${fmt(p.price * i.qty)}</div>
         </div>`;
     }).join('');
 
     const subtotal = cart.reduce((s, i) => s + byId[i.id].price * i.qty, 0);
     document.getElementById('summarySubtotal').textContent = fmt(subtotal);
-    document.getElementById('summaryTotal').textContent = fmt(subtotal);
 
     const freeShip = freeShippingThresholdCents != null && subtotal * 100 >= freeShippingThresholdCents;
+    const shippingCost = freeShip ? 0 : flatShippingCents / 100;
     const shipEl = document.getElementById('summaryShipping');
     const noteEl = document.getElementById('summaryNote');
-    if (freeShip) {
-      shipEl.textContent = 'Free';
-      noteEl.textContent = localPickupEnabled
-        ? 'This order ships free — or choose local pickup in the form.'
-        : 'This order ships free!';
-    } else {
-      shipEl.textContent = 'Selected at payment';
-      noteEl.textContent = `Standard shipping is ${fmt(flatShippingCents / 100)}${localPickupEnabled ? ', or choose free local pickup in the form' : ''}. Your final total updates there.`;
-    }
+    shipEl.textContent = shippingCost === 0 ? 'Free' : fmt(shippingCost);
+    noteEl.textContent = freeShip
+      ? 'This order ships free!'
+      : `Every order ships — standard shipping is ${fmt(shippingCost)}.`;
+
+    document.getElementById('summaryTotal').textContent = fmt(subtotal + shippingCost);
 
     // ── Mount Stripe embedded checkout ──────────────────────────────────────
     (async () => {
@@ -269,7 +274,7 @@ const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY ?? '';
         loading.style.display = 'none';
         checkout.mount('#checkoutEmbed');
       } catch (err) {
-        loading.outerHTML = `<div class="checkout-error">⚠ ${err.message}<br><a href="/shop">Return to the shop to update your cart</a></div>`;
+        loading.outerHTML = `<div style="padding:60px 32px;text-align:center;color:#b3452f;font-size:0.95rem;line-height:1.7;">⚠ ${err.message}<br><a href="/shop" style="color:var(--color-turquoise-vibrant);font-weight:700;text-decoration:underline;">Return to the shop to update your cart</a></div>`;
       }
     })();
   }

@@ -5,14 +5,15 @@ import ProductDetailModal from '../components/ProductDetailModal.astro';
 import ShopCart from '../components/ShopCart.astro';
 import CTABanner from '../components/CTABanner.astro';
 import shopData from '../data/products.json';
+import { UNLIMITED_STOCK } from '../lib/shopStore';
 
 const title = "Shop Handmade Mosaics — Piece x Piece Mosaics";
-const description = "Shop one-of-a-kind handmade mosaics and art pieces, made piece by piece in our studio. Each piece ships carefully packed, or pick up locally.";
+const description = "Shop one-of-a-kind handmade mosaics and art pieces, made piece by piece in our studio. Each piece ships carefully packed.";
 
 // Read from products.json — published at deploy time when the client adds/edits an item
 const products = (shopData.products as any[]).map(p => ({
   ...p,
-  remaining: p.quantity - (p.sold || 0),
+  remaining: p.stockMode === 'made_to_order' ? UNLIMITED_STOCK : p.quantity - (p.sold || 0),
 }));
 
 // Available pieces first, sold pieces at the end
@@ -23,7 +24,7 @@ const categories = [...new Set(products.map(p => p.category).filter(Boolean))] a
 const settings = shopData.settings as any;
 const catalog = products
   .filter(p => p.remaining > 0)
-  .map(p => ({ id: p.id, title: p.title, price: p.price, image: p.image, remaining: p.remaining }));
+  .map(p => ({ id: p.id, title: p.title, price: p.price, image: p.image, remaining: p.remaining, stockMode: p.stockMode }));
 ---
 
 <Base title={title} description={description}>
@@ -44,7 +45,7 @@ const catalog = products
       <div class="section-heading fade-in" style="margin-bottom:0;">
         <span class="section__label">Available Now</span>
         <h2>Original Pieces</h2>
-        <p>Each piece ships carefully packed within the US, or choose free local pickup at checkout.</p>
+        <p>Each piece ships carefully packed within the US.</p>
       </div>
 
       {products.length > 0 && (
@@ -77,10 +78,12 @@ const catalog = products
               description={p.description}
               price={p.price}
               imageSrc={p.image}
+              images={p.images}
               category={p.category}
               dimensions={p.dimensions}
               badge={p.badge}
               remaining={p.remaining}
+              stockMode={p.stockMode}
               index={index}
             />
           ))

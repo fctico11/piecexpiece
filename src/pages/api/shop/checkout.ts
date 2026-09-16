@@ -35,7 +35,9 @@ export const POST: APIRoute = async ({ request, url }) => {
       if (!product) {
         return new Response(JSON.stringify({ error: 'One of the items in your cart is no longer available.' }), { status: 409 });
       }
-      const remaining = product.quantity - (product.sold || 0);
+      const remaining = product.stockMode === 'made_to_order'
+        ? Infinity
+        : (product.quantity ?? 0) - (product.sold || 0);
       if (remaining < qty) {
         return new Response(JSON.stringify({
           error: remaining <= 0
@@ -46,14 +48,15 @@ export const POST: APIRoute = async ({ request, url }) => {
 
       const unitAmount = Math.round(product.price * 100);
       subtotalCents += unitAmount * qty;
+      const images = product.images?.length ? product.images : [product.image];
       lineItems.push({
         price_data: {
           currency: 'usd',
           unit_amount: unitAmount,
           product_data: {
             name: product.title,
-            description: product.dimensions ? `Handmade · ${product.dimensions}` : 'Handmade by Piece x Piece',
-            ...(canUseImages ? { images: [`${origin}${product.image}`] } : {}),
+            description: product.description.slice(0, 500),
+            ...(canUseImages ? { images: images.slice(0, 8).map(img => `${origin}${img}`) } : {}),
           },
         },
         quantity: qty,
@@ -70,7 +73,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       return new Response(JSON.stringify({ error: 'Cart is too large — please check out in smaller batches.' }), { status: 400 });
     }
 
-    // Shipping options from admin settings
+    // Shipping — a single flat (or free-above-threshold) rate; every order ships, no pickup option.
     const s = data.settings;
     const freeShipping = s.freeShippingThresholdCents != null && subtotalCents >= s.freeShippingThresholdCents;
     const shippingOptions: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
@@ -86,21 +89,13 @@ export const POST: APIRoute = async ({ request, url }) => {
         },
       },
     ];
-    if (s.localPickupEnabled) {
-      shippingOptions.push({
-        shipping_rate_data: {
-          type: 'fixed_amount',
-          display_name: 'Local pickup (we\'ll email you to arrange)',
-          fixed_amount: { amount: 0, currency: 'usd' },
-        },
-      });
-    }
 
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       mode: 'payment',
       line_items: lineItems,
       allow_promotion_codes: true,
+      adaptive_pricing: { enabled: false },
       shipping_address_collection: { allowed_countries: ['US'] },
       shipping_options: shippingOptions,
       payment_intent_data: {
