@@ -37,6 +37,25 @@
       "image": "/images/classes/spooky-mosaic-workshop-20261024.jpg",
       "stripeProductId": "prod_VDCNqQ3T8L4GEB",
       "stripePriceId": "price_1UClyoBNynaUx0jlLmA4MKtq"
+    },
+    {
+      "id": "holiday-mosaic-workshop-20261220",
+      "title": "Holiday Mosaic workshop!",
+      "description": "Come join us at Val’s for a little holiday creativity for a  hands on mini mosaic workshop! You'll get to create your very own mini mosaic masterpiece, choosing from three different projects: 3 mini ornaments,3  magnets, or a picture frame!\n\nWhether you're looking to make a thoughtful, handmade gift for someone special or simply want to enjoy a fun and creative holiday activity, this workshop is for you!\n\nNo experience is necessary! We'll provide all the materials, tools, and guidance you need to create your own unique design. You'll have the chance to play with colors, textures, and different pieces of glass and ceramic while learning the basics of mosaic art.\n\nCome get creative, enjoy some holiday fun, and leave with something beautiful that you made yourself!\n\nPerfect for last minute handmade gifts, a fun outing with friends, or just a little creative time for yourself. We can't wait to mosaic with you!",
+      "location": "Vals lesbian bar 605 s 3rd street Philadelphia, PA",
+      "date": "2026-12-20",
+      "time": "4:00 PM",
+      "duration": "3 hours",
+      "price": 35,
+      "totalTickets": 20,
+      "ticketsSold": 0,
+      "badge": null,
+      "featured": true,
+      "externalUrl": null,
+      "promotional": false,
+      "image": "/images/classes/holiday-mosaic-workshop-20261220.jpg",
+      "stripeProductId": "prod_Vce4aqJ7aPZSJo",
+      "stripePriceId": "price_1UbOmfBNynaUx0jlF4etDziD"
     }
   ]
 }
