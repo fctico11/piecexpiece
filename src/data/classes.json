@@ -31,7 +31,7 @@
       "totalTickets": 20,
       "ticketsSold": 4,
       "badge": null,
-      "featured": true,
+      "featured": false,
       "externalUrl": null,
       "promotional": false,
       "image": "/images/classes/spooky-mosaic-workshop-20261024.jpg",
