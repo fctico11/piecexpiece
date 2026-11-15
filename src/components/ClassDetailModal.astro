@@ -185,6 +185,16 @@ document.addEventListener('click', (e) => {
   if (card) openDetail(card);
 });
 
+// Deep link: /classes?class=<id> opens that class's details on load
+const sharedId = new URLSearchParams(location.search).get('class');
+if (sharedId) {
+  const sharedCard = [...document.querySelectorAll<HTMLElement>('[data-info-id]')].find(c => c.dataset.infoId === sharedId);
+  if (sharedCard) {
+    sharedCard.scrollIntoView({ block: 'center' });
+    openDetail(sharedCard);
+  }
+}
+
 // Close detail modal when Get Tickets is clicked inside it
 modal.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('.btn-get-tickets');

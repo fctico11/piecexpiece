@@ -464,6 +464,7 @@ function fmtDate(d: string) {
             <div class="featured-slot__meta">{fmtDate(cls.date)} · ${cls.price}</div>
             <div class="featured-slot__actions">
               <button class="btn-ghost" data-edit={JSON.stringify(cls)}>Edit</button>
+              <button class="btn-ghost" data-copy-link={cls.id} title="Copy a link that opens this class's details">🔗 Copy Link</button>
               <button class="btn-ghost star active" data-toggle-id={cls.id} data-toggle-featured="true" title="Remove from homepage">★ Featured</button>
             </div>
           </div>
@@ -529,6 +530,7 @@ function fmtDate(d: string) {
                 {cls.featured ? '★' : '☆'} {cls.featured ? 'Featured' : 'Feature'}
               </button>
               <button class="btn-ghost" data-edit={JSON.stringify(cls)}>Edit</button>
+              <button class="btn-ghost" data-copy-link={cls.id} title="Copy a link that opens this class's details">🔗 Copy Link</button>
               <button class="btn-ghost danger" data-delete-id={cls.id} data-delete-title={cls.title}>Delete</button>
             </div>
           </div>
@@ -799,6 +801,17 @@ function clearForm() {
   document.getElementById('fExternalUrl').value = '';
   applyPromotionalUI();
 }
+
+// ── Copy share link ────────────────────────────────────────────────────────
+document.querySelectorAll('[data-copy-link]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const url = `${location.origin}/classes?class=${encodeURIComponent(btn.dataset.copyLink)}`;
+    try { await navigator.clipboard.writeText(url); } catch { prompt('Copy this link:', url); return; }
+    const orig = btn.textContent;
+    btn.textContent = '✓ Link copied';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+});
 
 // ── Edit ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('[data-edit]').forEach(btn => {
