@@ -1,6 +1,25 @@
 {
   "classes": [
     {
+      "id": "holiday-ornament-workshop-20261219",
+      "title": "Holiday Ornament Workshop",
+      "description": "Come join us at Six Points Pub for a little holiday creativity for a  hands on ornament workshop! You'll get to create your very own mini masterpiece, choosing from three different projects: 3 mini ornaments,3  magnets, or a picture frame!\n\nWhether you're looking to make a thoughtful, handmade gift for someone special or simply want to enjoy a fun and creative holiday activity, this workshop is for you!\n\nNo experience is necessary! We'll provide all the materials, tools, and guidance you need to create your own unique design. You'll have the chance to play with colors, textures, and different pieces of glass and ceramic while learning the basics of mosaic art.\n\nCome get creative, enjoy some holiday fun, and leave with something beautiful that you made yourself!\n\nPerfect for last minute handmade gifts, a fun outing with friends, or just a little creative time for yourself. We can't wait to mosaic with you!",
+      "location": "574 Bloomfield Avenue",
+      "date": "2026-12-19",
+      "time": "1:00 PM",
+      "duration": "2 hours",
+      "price": 45,
+      "totalTickets": 20,
+      "ticketsSold": 0,
+      "badge": null,
+      "featured": true,
+      "externalUrl": null,
+      "promotional": false,
+      "image": "/images/classes/holiday-ornament-workshop-20261219.jpg",
+      "stripeProductId": "prod_VdR2LvMXxSCKvb",
+      "stripePriceId": "price_1UcAArBNynaUx0jlkGK93J9I"
+    },
+    {
       "id": "holiday-mosaic-workshop-20261220",
       "title": "Holiday Mosaic workshop!",
       "description": "Come join us at Val’s for a little holiday creativity for a  hands on mini mosaic workshop! You'll get to create your very own mini mosaic masterpiece, choosing from three different projects: 3 mini ornaments,3  magnets, or a picture frame!\n\nWhether you're looking to make a thoughtful, handmade gift for someone special or simply want to enjoy a fun and creative holiday activity, this workshop is for you!\n\nNo experience is necessary! We'll provide all the materials, tools, and guidance you need to create your own unique design. You'll have the chance to play with colors, textures, and different pieces of glass and ceramic while learning the basics of mosaic art.\n\nCome get creative, enjoy some holiday fun, and leave with something beautiful that you made yourself!\n\nPerfect for last minute handmade gifts, a fun outing with friends, or just a little creative time for yourself. We can't wait to mosaic with you!",
