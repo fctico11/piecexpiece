@@ -1,6 +1,25 @@
 {
   "classes": [
     {
+      "id": "holiday-sale-pop-up-20261206",
+      "title": "HOLIDAY SALE POP-UP",
+      "description": "Join us on Sunday, December 6, 2026, for a special holiday pop-up sale at one of our favorite local coffee shops!\nShop unique, one of a kind gifts, handmade with love and a little extra creativity. Whether you're looking for the perfect holiday gift or something special for yourself, come support small businesses, shop local, and enjoy a little holiday cheer! \nAll gifts handmade with love, always! 🎁",
+      "location": "59 Washington Street Bloomfield, NJ",
+      "date": "2026-12-06",
+      "time": "9:00 AM",
+      "duration": "2 hours",
+      "price": 0,
+      "totalTickets": 0,
+      "ticketsSold": 0,
+      "badge": null,
+      "featured": false,
+      "externalUrl": null,
+      "promotional": true,
+      "image": "/images/classes/holiday-sale-pop-up-20261206.jpg",
+      "stripeProductId": null,
+      "stripePriceId": null
+    },
+    {
       "id": "holiday-ornament-workshop-20261219",
       "title": "Holiday Ornament Workshop",
       "description": "Come join us at Six Points Pub for a little holiday creativity for a  hands on ornament workshop! You'll get to create your very own mini masterpiece, choosing from three different projects: 3 mini ornaments,3  magnets, or a picture frame!\n\nWhether you're looking to make a thoughtful, handmade gift for someone special or simply want to enjoy a fun and creative holiday activity, this workshop is for you!\n\nNo experience is necessary! We'll provide all the materials, tools, and guidance you need to create your own unique design. You'll have the chance to play with colors, textures, and different pieces of glass and ceramic while learning the basics of mosaic art.\n\nCome get creative, enjoy some holiday fun, and leave with something beautiful that you made yourself!\n\nPerfect for last minute handmade gifts, a fun outing with friends, or just a little creative time for yourself. We can't wait to mosaic with you!",
