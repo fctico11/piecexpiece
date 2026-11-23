@@ -12,7 +12,7 @@
       "totalTickets": 0,
       "ticketsSold": 0,
       "badge": null,
-      "featured": false,
+      "featured": true,
       "externalUrl": null,
       "promotional": true,
       "image": "/images/classes/holiday-sale-pop-up-20261206.jpg",
